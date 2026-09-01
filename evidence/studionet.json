@@ -1,0 +1,8 @@
+{
+  "status": "NOT PROVEN LIVE",
+  "network": "studionet",
+  "contract": null,
+  "transactions": [],
+  "reason": "No representative live flow is claimed until a finalized current-source deployment is available.",
+  "directOnly": ["round and scope validation", "participant registration rules", "missing-evidence status gates", "appeal and bond safety checks"]
+}

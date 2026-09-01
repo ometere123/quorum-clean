@@ -1,5 +1,6 @@
 {
   "name": "quorum-clean",
+  "type": "module",
   "version": "0.1.0",
   "private": true,
   "license": "Apache-2.0",

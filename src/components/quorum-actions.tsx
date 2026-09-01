@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { CONTRACT_ADDRESS } from "@/lib/genlayer/config";
 import { createInjectedClient } from "@/lib/genlayer/client";
-import { writeContract } from "@/lib/genlayer/tx";
+import { waitAccepted, writeContract } from "@/lib/genlayer/tx";
 
 type FieldMap = Record<string, string>;
 const initial: FieldMap = { round_id: "", name: "", start: "2022", end: "2026", role: "REVIEWER", label: "", orcid: "", openalex: "", github: "", repos: "[]", orgs: "[]", reviewer: "", applicant: "", screening: "", grounds: "WRONG_IDENTITY", evidence: "", bond: "", appeal: "" };
@@ -33,7 +33,9 @@ export function QuorumActions({ roundId = "" }: { roundId?: string }) {
       if (!address) throw new Error("Connect the wallet and try again.");
       const client = await createInjectedClient(address);
       const hash = await writeContract(client, functionName, args, value);
-      setMessage(`Submitted ${functionName}: ${String(hash)}. Finality is visible in the transaction rail.`);
+      setMessage(`Submitted ${functionName}: ${String(hash)}. Waiting for finalized GenVM execution…`);
+      const outcome = await waitAccepted(client, hash);
+      setMessage(`${functionName} finalized with GenVM ${outcome.executionResult}. Transaction: ${String(hash)}`);
     } catch (error) { setMessage(error instanceof Error ? error.message : String(error)); }
     finally { setBusy(false); }
   }

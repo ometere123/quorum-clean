@@ -1,3 +1,4 @@
+# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
 """QuorumClean: a conflict-of-interest gate for grant and paper review panels, decided on
 public evidence inside consensus.
 
@@ -1959,7 +1960,11 @@ def _fetch(url, headers=None):
     is not raised at all: `json` comes back None and `text` carries the bytes, which is what lets
     `guard_orcid_json_body` name the XML case precisely instead of reporting a parse failure.
     """
-    resp = gl.nondet.web.request(url, method="GET", headers=headers or {})
+    raise RuntimeError("network fetch attempted outside an equivalence-principle block")
+
+
+def _normalize_response(url, resp):
+    """Convert one already-fetched response into the pure region adapter shape."""
     body = resp.body or b""
     if len(body) > MAX_BODY_BYTES:
         raise ExternalError(
@@ -2308,6 +2313,25 @@ class QuorumClean(gl.Contract):
             return
         _Payee(who).emit_transfer(value=amount)
 
+    def _refund_and_reject(self, bond: u256, reason: str) -> str:
+        """Return value sent to a payable entry point that refuses before mutation.
+
+        StudioNet does not return `gl.message.value` when GenVM reverts. Payable methods therefore
+        run a deterministic, mutation-free preflight and use this successful refusal path for
+        caller mistakes. The return prefix is machine-readable and is not an accepted lifecycle
+        result.
+        """
+        self._pay(gl.message.sender_address, bond)
+        return "[REJECTED] %s" % reason
+
+    def _preflight_payable(self, bond: u256, check) -> str:
+        """Run a no-write validation callback and refund any caller-visible rejection."""
+        try:
+            check()
+        except Exception as exc:  # noqa: BLE001 - preflight must not strand caller value
+            return self._refund_and_reject(bond, str(exc))
+        return ""
+
     def _clip(self, value, cap: int) -> str:
         text = str(value or "")
         text = text.replace("\r", " ").replace("\n", " ").replace(TIE_FIELD_SEP, " ").strip()
@@ -2438,6 +2462,23 @@ class QuorumClean(gl.Contract):
         and appeal id in the round is minted from it and those are read back through the same
         length guard. Refusing a long name here costs a retry; accepting it would cost the round.
         """
+        bond = u256(gl.message.value)
+
+        def check():
+            rid_check = self._require_id(round_id, "round id", MAX_ROUND_ID)
+            if rid_check in self.rounds:
+                self._reject("round %s already exists" % rid_check)
+            self._require_text(name, "round name", MAX_NAME)
+            start_check = self._require_year(coi_start_year, "coi_start_year")
+            end_check = self._require_year(coi_end_year, "coi_end_year")
+            if start_check > end_check:
+                self._reject("coi_start_year is after coi_end_year")
+            self._require_now()
+
+        refusal = self._preflight_payable(bond, check)
+        if refusal:
+            return refusal
+
         rid = self._require_id(round_id, "round id", MAX_ROUND_ID)
         if rid in self.rounds:
             self._reject("round %s already exists" % rid)
@@ -2646,16 +2687,42 @@ class QuorumClean(gl.Contract):
     def request_screening(self, round_id: str, reviewer: str, applicant: str) -> str:
         """Queue one ordered pair for screening, with a small bond.
 
-        This method REVERTS on bad input rather than accepting and refunding, and StudioNet does
-        not roll back `gl.message.value` on a revert, so that choice needs saying. Every check
-        here is deterministic and touches no network, which means the interface can simulate this
-        exact call with no value attached and only send the bond once the simulation returns. No
-        check in this method can pass in simulation and fail in execution.
+        Bad input is rejected through a successful `[REJECTED]` return after a deterministic
+        preflight refund. StudioNet does not roll back `gl.message.value` on a revert, so no
+        caller-visible validation failure is allowed to raise after value arrives. Every check
+        here is deterministic and touches no network, which also lets the interface simulate this
+        exact call with no value attached before sending the bond.
 
         The bond is small and it is not a price on the outcome. It comes back to whoever paid it
         the moment `screen` resolves the pair, on every verdict including INSUFFICIENT, because a
         rate limit is not the requester's fault.
         """
+        bond = u256(gl.message.value)
+
+        def check():
+            rnd_check = self._get_round(round_id)
+            if rnd_check.status == ROUND_LOCKED:
+                self._reject("round %s is locked" % rnd_check.id)
+            rev_check = self._require_address(reviewer, "reviewer")
+            app_check = self._require_address(applicant, "applicant")
+            if rev_check == app_check:
+                self._reject("a participant cannot be screened against themselves")
+            rev_rec_check = self._require_participant(rnd_check.id, rev_check, "reviewer")
+            app_rec_check = self._require_participant(rnd_check.id, app_check, "applicant")
+            if rev_rec_check.role != ROLE_REVIEWER or app_rec_check.role != ROLE_APPLICANT:
+                self._reject("participant roles do not match the requested pair")
+            pair_check = self._pair_key(rnd_check.id, rev_check, app_check)
+            if pair_check in self.pair_to_screening:
+                self._reject("pair already requested as screening %s" % self.pair_to_screening[pair_check])
+            if int(bond) < MIN_BOND_WEI:
+                self._reject("a screening bond of at least %d wei is required, got %d"
+                             % (MIN_BOND_WEI, int(bond)))
+            self._require_now()
+
+        refusal = self._preflight_payable(bond, check)
+        if refusal:
+            return refusal
+
         rnd = self._get_round(round_id)
         if rnd.status == ROUND_LOCKED:
             self._reject("round %s is locked" % rnd.id)
@@ -2842,10 +2909,13 @@ class QuorumClean(gl.Contract):
         `select=` is a bug even when it returns 200.
         """
         def work():
+            def ep_fetch(url, headers=None):
+                return _normalize_response(url, gl.nondet.web.request(
+                    url, method="GET", headers=headers or {}))
             try:
                 window = coi_window_from_years(start_year, end_year)
-                graph_a = extract_coauthorship(fetch_openalex_works(_fetch, id_a), id_a)
-                graph_b = extract_coauthorship(fetch_openalex_works(_fetch, id_b), id_b)
+                graph_a = extract_coauthorship(fetch_openalex_works(ep_fetch, id_a), id_a)
+                graph_b = extract_coauthorship(fetch_openalex_works(ep_fetch, id_b), id_b)
                 ties = coauthorship_overlap(graph_a, id_b, window)
                 shared = shared_third_party_coauthors(graph_a, graph_b)
                 return {
@@ -2907,10 +2977,13 @@ class QuorumClean(gl.Contract):
         which lists no rows, leaves this source incomplete rather than clean.
         """
         def work():
+            def ep_fetch(url, headers=None):
+                return _normalize_response(url, gl.nondet.web.request(
+                    url, method="GET", headers=headers or {}))
             try:
                 window = coi_window_from_years(start_year, end_year)
-                emps_a = extract_employments(fetch_orcid_record(_fetch, orcid_a))
-                emps_b = extract_employments(fetch_orcid_record(_fetch, orcid_b))
+                emps_a = extract_employments(fetch_orcid_record(ep_fetch, orcid_a))
+                emps_b = extract_employments(fetch_orcid_record(ep_fetch, orcid_b))
                 ties = employment_overlap(emps_a, emps_b, window)
                 facts = ("employments_a=%d employments_b=%d unusable_a=%d unusable_b=%d"
                          % (len(emps_a["employments"]), len(emps_b["employments"]),
@@ -2952,6 +3025,9 @@ class QuorumClean(gl.Contract):
         of one.
         """
         def work():
+            def ep_fetch(url, headers=None):
+                return _normalize_response(url, gl.nondet.web.request(
+                    url, method="GET", headers=headers or {}))
             repos = [r for r in repos_csv.split(",") if r.strip()]
             orgs = [o for o in orgs_csv.split(",") if o.strip()]
             ties = []
@@ -2961,7 +3037,7 @@ class QuorumClean(gl.Contract):
             try:
                 if repos:
                     batch = fetch_github_contributors_batch(
-                        _fetch, repos, budget=GITHUB_UNAUTH_HOURLY_LIMIT, spent=0)
+                        ep_fetch, repos, budget=GITHUB_UNAUTH_HOURLY_LIMIT, spent=0)
                     spent = int(batch["requests_spent"])
                     for repo in sorted(batch["cache"]):
                         tie = contribution_overlap(repo, batch["cache"][repo], login_a, login_b)
@@ -2977,7 +3053,7 @@ class QuorumClean(gl.Contract):
                         tags.append(TAG_EXTERNAL)
                         continue
                     try:
-                        resp = _call(_fetch, build_github_org_members_url(org),
+                        resp = _call(ep_fetch, build_github_org_members_url(org),
                                      dict(GITHUB_HEADERS), source="github")
                         spent += 1
                         payload = resp["json"]
@@ -3470,6 +3546,34 @@ Return JSON with exactly these keys: label, tie_basis, rationale."""
     # appeal
     # ==================================================================================
 
+    def _check_appeal_request(self, screening_id: str, grounds: str,
+                              evidence_url: str, bond: u256) -> None:
+        """Validate an appeal without writes so funded caller errors can be refunded."""
+        sid = self._require_id(screening_id, "screening id")
+        if sid not in self.screenings:
+            self._reject("no screening %r" % sid[:40])
+        sc = self.screenings[sid]
+        rnd = self.rounds[sc.round_id]
+        if rnd.status == ROUND_LOCKED:
+            self._reject("round %s is locked" % rnd.id)
+        if sc.status in (STATUS_PENDING, VERDICT_INSUFFICIENT):
+            self._reject("screening %s is not appealable in status %s" % (sid, sc.status))
+        if sc.appeal_id != "":
+            self._reject("screening %s already has appeal %s" % (sid, sc.appeal_id))
+        ground = self._require_text(grounds, "grounds", 40).upper()
+        if ground not in ALL_GROUNDS:
+            self._reject("grounds %r is not one of %s" % (ground[:40], ", ".join(ALL_GROUNDS)))
+        if sc.status not in GROUND_APPLIES_TO[ground]:
+            self._reject("ground %s cannot be raised against a %s finding" % (ground, sc.status))
+        entitled = sc.reviewer if GROUND_STANDING[ground] == ROLE_REVIEWER else sc.applicant
+        if gl.message.sender_address != entitled:
+            self._reject("caller does not have standing for %s" % ground)
+        self._require_url(evidence_url, "evidence_url")
+        if int(bond) < MIN_BOND_WEI:
+            self._reject("an appeal needs a bond of at least %d wei; received %d"
+                         % (MIN_BOND_WEI, int(bond)))
+        self._require_now()
+
     @gl.public.write.payable
     def appeal(self, screening_id: str, grounds: str, evidence_url: str) -> str:
         """Contest a finding on one named ground, with a bond and a URL. One appeal per screening.
@@ -3482,6 +3586,12 @@ Return JSON with exactly these keys: label, tie_basis, rationale."""
         contest: the remedy is to call `screen` again once the source that failed is answering,
         which costs no new bond because the first one is still held.
         """
+        bond = u256(gl.message.value)
+        refusal = self._preflight_payable(
+            bond, lambda: self._check_appeal_request(screening_id, grounds, evidence_url, bond))
+        if refusal:
+            return refusal
+
         sid = self._require_id(screening_id, "screening id")
         if sid not in self.screenings:
             self._reject("no screening %r" % sid[:40])
@@ -4091,5 +4201,3 @@ Return JSON with exactly these keys: disposition, rationale."""
                                    "the first screening. No part of the evidence path reads a "
                                    "clock."),
         }
-
-

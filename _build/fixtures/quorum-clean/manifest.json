@@ -1,0 +1,256 @@
+{
+  "project": "quorum-clean",
+  "sources": "genlayer-prds/04-reviewer-integrity-gate.md section 2, re-verified live 2026-08-25",
+  "note": [
+    "Three unrelated sources, and a conflict is only ever asserted from an overlap that at least",
+    "one of them can evidence. A source that is unreachable makes the screening INSUFFICIENT and",
+    "retryable. It never makes it CLEAR.",
+    "",
+    "Every OpenAlex works query carries select=. Measured 6,918 B with it against 34,362 B without,",
+    "a 5x reduction, and the co-authorship graph is the largest payload in this project. The",
+    "capture scripts must use the same select= list the contract will use, or the fixtures will",
+    "understate what consensus has to carry.",
+    "",
+    "GitHub is 60 requests per hour per IP unauthenticated. Capture in one batch, and never loop a",
+    "capture script. The 403 route below exists because that limit will be hit in production, and",
+    "a rate-limited source is [EXTERNAL], never an absence of conflict.",
+    "",
+    "Captured live 2026-08-25. Every route carries a captured_* record alongside the original",
+    "measured_* claim rather than overwriting it, so the drift stays visible. Four routes drifted:",
+    "openalex-author-resolve 6800 to 6814, orcid-record XML 44000 to 44156, both rounding-scale;",
+    "openalex-coauthors 6918 to 73247 because the author went from 2 works to 23; and",
+    "github-contributors 14054 to 28533 because the route pins a pattern and no example URL, so the",
+    "original measurement was against a different repo. The five routes that pinned no URL at all",
+    "now record captured_url, without which none of them is reproducible.",
+    "",
+    "ROUTING. harness.py matches first-match-wins in manifest order (FixtureNetwork._match): exact",
+    "`url` first, then `pattern.search(url)`, then the next route. So route order is behaviour, not",
+    "presentation, and a general pattern placed above a specific one makes the specific one",
+    "unreachable. Every route therefore declares how it is reached, and verify_fixtures.py proves",
+    "the declaration by routing the route's own representative URL through the real matcher:",
+    "",
+    "  routing url       the default. The representative URL must come back to THIS route.",
+    "                    Resolution order for the representative URL is `url`, then",
+    "                    `capture.example`, then `capture.captured_url`. `example` outranks",
+    "                    `captured_url` because they answer different questions: example is a URL",
+    "                    the contract would build, captured_url is where the bytes came from, and",
+    "                    for a synthetic-token route those are deliberately not the same URL.",
+    "  routing prefer    same URL, different moment. Two routes share one representative URL on",
+    "                    purpose and the test selects between them with prefer=[name]. Verified by",
+    "                    matching with that name preferred, so the pair is not reported as a shadow.",
+    "  routing evidence  captured to justify a design decision and never served. Requires a stated",
+    "                    routing_reason. Never routed, so it cannot shadow anything and cannot be",
+    "                    shadowed. The body still counts as referenced, which is the point: the",
+    "                    finding stays on disk and stays cited instead of being deleted for tidiness.",
+    "",
+    "Reordering done here, with the cause of each unreachable route measured rather than guessed:",
+    "",
+    "  1. The three authors?search= routes are evidence, not routes. The contract has no name",
+    "     resolution step at all: participants declare their own OpenAlex author ID and the only",
+    "     OpenAlex call is works?filter=author.id:. build_openalex_author_search_url and",
+    "     parse_openalex_authors exist in the spliced module and are unit tested, and the contract",
+    "     calls neither. That is the design decision the openalex-ambiguous capture argues for, so",
+    "     the capture is kept and relabelled rather than removed.",
+    "  2. github-rate-limited and github-not-found keyed uppercase RATELIMIT and NOTFOUND, which no",
+    "     URL the contract builds can contain: normalize_repo_id and normalize_github_login both",
+    "     lowercase, so build_github_contributors_url('OWNER/RateLimit-Repo') returns",
+    "     .../repos/owner/ratelimit-repo/contributors?per_page=100. Tokens are lowercase now.",
+    "  3. orcid-not-found keyed on a NOTFOUND token inside the iD, which normalize_orcid rejects",
+    "     outright ([EXPECTED] orcid must have 16 characters), so build_orcid_record_url could never",
+    "     produce it. It is keyed on the exact real URL instead, the well-formed but unassigned",
+    "     0000-0002-1825-0000, and placed above orcid-record because orcid-record's [0-9X-]+ pattern",
+    "     matches that iD too.",
+    "  4. Both GitHub failure routes sat below github-contributors, whose pattern matched them first.",
+    "     Failure routes are above the general ones now.",
+    "",
+    "orcid-record-noaccept.xml is on disk and is the missing_header_body for orcid-record. It has no",
+    "`body` key of its own because it is the alternate body of another route, and verify_fixtures.py",
+    "now reads missing_header_body when deciding which files a route references."
+  ],
+  "routes": [
+    {
+      "name": "github-rate-limited",
+      "pattern": "^https://api\\.github\\.com/(repos|orgs)/.*ratelimit",
+      "method": "GET",
+      "status": 403,
+      "body": "github-rate-limited.json",
+      "headers": { "x-ratelimit-remaining": "0", "x-ratelimit-limit": "60" },
+      "routing": "url",
+      "note": "60 per hour per IP unauthenticated, so this is an expected operating condition and not an edge case. Must be [EXTERNAL]. Placed above github-contributors: its pattern matches any /repos/{owner}/{name}/contributors, this one included, and first-match-wins made this route dead until it moved.",
+      "capture": {
+        "example": "https://api.github.com/repos/owner/ratelimit-repo/contributors?per_page=100",
+        "captured_url": "https://api.github.com/repos/ethereum/go-ethereum",
+        "captured_bytes": 280,
+        "example_note": "The token is lowercase because it has to be. normalize_repo_id lowercases, so a test declaring the repo as OWNER/RateLimit-Repo reaches the network as owner/ratelimit-repo, and the previous uppercase RATELIMIT pattern could not be produced by any input the contract accepts. example and captured_url differ on purpose: example is the URL a test drives, captured_url is where the 403 bytes came from.",
+        "captured_note": "A genuine 403, not a hand-authored one, and it cost the hour's whole budget to get: there is no way to observe this response without first spending the 60 unauthenticated requests, so it was captured last, after every other GitHub fixture was on disk and verified. The burn loop watched x-ratelimit-remaining on each response rather than polling /rate_limit, counted down 56 to 0, and the next request returned 403 carrying x-ratelimit-remaining: 0 and x-ratelimit-limit: 60, matching the headers this route declares. Re-capturing it means burning another hour, so treat the file as expensive."
+      },
+      "expect": { "classification": "[EXTERNAL]", "verdict": "INSUFFICIENT" }
+    },
+    {
+      "name": "github-not-found",
+      "pattern": "^https://api\\.github\\.com/(repos|orgs)/.*notfound",
+      "method": "GET",
+      "status": 404,
+      "body": "github-not-found.json",
+      "routing": "url",
+      "note": "A repo that does not exist is [EXTERNAL] absence of evidence, never evidence of no contribution overlap. Above github-contributors for the same first-match-wins reason as the 403 route.",
+      "capture": {
+        "example": "https://api.github.com/repos/genlayer-fixture-notfound/repo-does-not-exist/contributors?per_page=100",
+        "captured_url": "https://api.github.com/repos/genlayer-fixture-NOTFOUND/repo-does-not-exist-NOTFOUND",
+        "captured_bytes": 118,
+        "example_note": "captured_url keeps the uppercase form actually requested during capture; example carries the lowercase form the contract builds, which is what this route now matches on.",
+        "captured_note": "Real 404 against an owner and repo that do not exist. Body is GitHub's message Not Found plus status and documentation_url."
+      },
+      "expect": { "classification": "[EXTERNAL]" }
+    },
+    {
+      "name": "github-contributors",
+      "pattern": "^https://api\\.github\\.com/repos/[^/]+/[^/]+/contributors",
+      "method": "GET",
+      "status": 200,
+      "body": "github-contributors.json",
+      "routing": "url",
+      "capture": {
+        "example": "https://api.github.com/repos/ethereum/go-ethereum/contributors?per_page=100",
+        "captured_url": "https://api.github.com/repos/ethereum/go-ethereum/contributors",
+        "measured_bytes": 14054,
+        "captured_bytes": 28533,
+        "example_note": "captured_url omits the query string because the capture used the default page; example carries the per_page=100 that build_github_contributors_url actually emits. Both route here, and the pattern stops before the query string so neither depends on it.",
+        "captured_note": "2.03x the measured figure, and the cause is repo choice rather than drift: this route pins a pattern and no example URL, so the 14054 measurement came from some other {owner}/{repo}. ethereum/go-ethereum was chosen here as a large, stable, unambiguously public repo. One default page of 30 contributors, every one carrying a contributions count, top five 3951, 2681, 1633, 826, 661. Pinning captured_url is what makes the number reproducible; any future re-capture against a different repo will drift again and should say so."
+      },
+      "expect": {
+        "has_contributions_counts": true,
+        "note": "The contributions count is the overlap weight. A contributor list without counts cannot distinguish one drive-by commit from a co-maintainer, and the two are not the same conflict."
+      }
+    },
+    {
+      "name": "github-org-members",
+      "pattern": "^https://api\\.github\\.com/orgs/[^/]+/members",
+      "method": "GET",
+      "status": 200,
+      "body": "github-org-members.json",
+      "routing": "url",
+      "note": "Public members only. A private member is invisible here, so a negative from this source is never evidence of no shared affiliation, only absence of public evidence of one.",
+      "capture": {
+        "example": "https://api.github.com/orgs/ethereum/members?per_page=100",
+        "captured_url": "https://api.github.com/orgs/ethereum/members",
+        "captured_bytes": 28227,
+        "captured_note": "30 public members on the default page, 19 keys each. No measured_bytes existed for this route to drift from."
+      },
+      "expect": { "public_only": true }
+    },
+
+    {
+      "name": "orcid-not-found",
+      "url": "https://pub.orcid.org/v3.0/0000-0002-1825-0003/record",
+      "method": "GET",
+      "status": 404,
+      "body": "orcid-not-found.json",
+      "routing": "url",
+      "note": "Keyed on the exact URL, not a pattern, and placed above orcid-record. Two separate iDs have already failed to be reachable here, from two different causes, which is why the key is spelled out. FIRST the pattern demanded a NOTFOUND token inside the iD, which normalize_orcid rejects with [EXPECTED] orcid must have 16 characters, so build_orcid_record_url could never emit it. SECOND the captured iD 0000-0002-1825-0000 fails the ISO 7064 MOD 11-2 check digit, which requires 3, and normalize_orcid now verifies it, so register_participant refuses that iD and no screening can reach this URL either. The key is therefore 0000-0002-1825-0003: the check-digit-valid form of the same iD, which is a URL the contract can actually build. The bytes are the real 404 captured from the -0000 URL and are served unchanged, which is honest because ORCID's error object names no iD: the same 219 bytes come back for any well-formed iD it has not assigned. orcid-record's [0-9X-]+ pattern also matches this URL, so manifest order is what keeps this route alive.",
+      "capture": {
+        "captured_url": "https://pub.orcid.org/v3.0/0000-0002-1825-0000/record",
+        "captured_bytes": 219,
+        "captured_note": "A real 404 from a well-formed but unassigned ORCID iD, requested with Accept: application/json. Body is ORCID's own error object with response-code 404 plus developer-message, user-message, error-code and more-info. It echoes no iD, which is what makes it reusable for the sibling URL this route is keyed on.",
+        "served_for": "https://pub.orcid.org/v3.0/0000-0002-1825-0003/record"
+      },
+      "expect": { "classification": "[EXTERNAL]", "verdict": "INSUFFICIENT" }
+    },
+    {
+      "name": "orcid-record",
+      "pattern": "^https://pub\\.orcid\\.org/v3\\.0/[0-9X-]+/record$",
+      "method": "GET",
+      "status": 200,
+      "body": "orcid-record.json",
+      "headers": { "content-type": "application/json" },
+      "requires_header": { "Accept": "application/json" },
+      "missing_header_status": 200,
+      "missing_header_body": "orcid-record-noaccept.xml",
+      "routing": "url",
+      "capture": {
+        "example": "https://pub.orcid.org/v3.0/0000-0002-1825-0097/record",
+        "measured_bytes_json": 22492,
+        "measured_bytes_xml": 44000,
+        "captured_bytes_json": 22492,
+        "captured_bytes_xml": 44156,
+        "captured_note": "JSON is exact at 22492 with no drift. XML is 44156 against a measured 44000 that was evidently the rounded 44 KB figure, so 156 bytes is the rounding rather than movement. Both shapes captured from the same URL, the only difference being the Accept header, which is the pair the route exists to distinguish. The JSON body carries 2 affiliation-groups, Wesleyan University and Brown University, so employments_present holds."
+      },
+      "note": "Without the Accept header ORCID returns 200 and 44 KB of XML. That is worse than a 4xx, because a check that only asks whether the request succeeded sees success and then finds no employment overlap in bytes it cannot parse. Absence of a parseable employment record is [EXTERNAL], not an absence of conflict.",
+      "expect": { "employments_present": true }
+    },
+
+    {
+      "name": "openalex-coauthors",
+      "pattern": "^https://api\\.openalex\\.org/works\\?filter=author\\.id:",
+      "method": "GET",
+      "status": 200,
+      "body": "openalex-works-select.json",
+      "routing": "url",
+      "capture": {
+        "example": "https://api.openalex.org/works?filter=author.id:A5069172917&select=id,title,authorships,publication_year&per-page=50",
+        "measured_bytes": 6918,
+        "measured_bytes_without_select": 34362,
+        "captured_bytes": 73247,
+        "captured_note": "10.6x the measured figure, and select= is not the reason: the only keys returned are the four selected ones. The cause is the result set. meta.count is now 23 works where the measurement was taken against 2, which is also why captured_bytes exceeds measured_bytes_without_select and why those two numbers cannot be compared to each other. All 23 works carry publication_year, and all 97 author slots carry stable A-ids, so both expect claims hold. The operational point survives intact and gets stronger: 73 KB is what every validator in the block now has to fetch and agree on for one author."
+      },
+      "expect": {
+        "authorships_have_stable_ids": true,
+        "publication_year_present": true,
+        "author_orcid_slots": 48,
+        "author_slots": 97,
+        "note": "publication_year is load bearing: the COI window is arithmetic on it, so a work missing the field cannot be silently treated as in-window or out-of-window. authorships[].author.orcid is present in 48 of 97 slots, which is why the declared-handle consistency check of PRD section 4 step 2 can be enforced from this payload without a second fetch: a declared ORCID that contradicts the orcid OpenAlex records for the same author ID is [EXPECTED], while a null orcid field is absence and passes."
+      }
+    },
+
+    {
+      "name": "openalex-no-match",
+      "pattern": "^https://api\\.openalex\\.org/authors\\?search=.*NOMATCH",
+      "method": "GET",
+      "status": 200,
+      "body": "openalex-no-match.json",
+      "routing": "evidence",
+      "routing_reason": "The contract never searches OpenAlex by name, so nothing can request this URL. Kept as the measured floor case for the name-resolution path that was considered and rejected: a live 200 carrying results [] proves that OpenAlex answers a nonexistent name with success rather than an error, which is why a name-resolution design would have needed an explicit zero-results guard to avoid reading HTTP 200 as identity confirmed.",
+      "note": "200 with an empty results array. A name that resolves to nobody would be INSUFFICIENT and retryable, and must never resolve to the nearest plausible author.",
+      "capture": {
+        "captured_url": "https://api.openalex.org/authors?search=Qzzxvn%20NOMATCH%20Wvvqlx",
+        "captured_bytes": 410,
+        "captured_note": "Live 200 with results [] and meta.count 0, not a hand-authored body. Recorded because this route pinned no example URL and the fixture is not reproducible without knowing which search string produced the empty set."
+      }
+    },
+    {
+      "name": "openalex-ambiguous",
+      "pattern": "^https://api\\.openalex\\.org/authors\\?search=.*AMBIGUOUS",
+      "method": "GET",
+      "status": 200,
+      "body": "openalex-ambiguous.json",
+      "routing": "evidence",
+      "routing_reason": "This capture is the argument for the design the contract shipped. Identity comes from a declared OpenAlex author ID precisely because a common name does not resolve, and both halves of that are measured here: 25 candidates under five distinct display names with comparable works counts, and 3,560,060 bytes to carry them. Requiring the declared ID removes the fetch, the judgement and the 3.5 MB in one move. Serving this route would test a code path the contract does not have.",
+      "note": "A common name resolving to several authors with comparable works counts. Under a name-resolution design the model would be asked which candidate the evidence denotes and allowed to answer none; picking one to avoid answering none is the failure this capture exists to document.",
+      "capture": {
+        "captured_url": "https://api.openalex.org/authors?search=Wei%20Wang",
+        "captured_bytes": 3560060,
+        "captured_note": "25 candidates out of meta.count 13708, works_count across the first eight running 678, 692, 1084, 1086, 1395, 1960, 2468, 3826, under five distinct display names including Wei Wang, Jianwei Wang, Xiaogang Wang and Xin Wei Wang. Comparable enough that none is the defensible answer, which is what the route wants. It is also 3.5 MB, the largest fixture in this build and 522x the resolved case at 6814 B, and that is a finding rather than an accident of choice: an ambiguous common name is not only unresolvable, it is the worst payload in the project for a consensus block to carry. A size cap set from the resolved case would reject the ambiguous one on size and never reach the judgement this fixture is testing."
+      }
+    },
+    {
+      "name": "openalex-author-resolve",
+      "pattern": "^https://api\\.openalex\\.org/authors\\?search=",
+      "method": "GET",
+      "status": 200,
+      "body": "openalex-authors-search.json",
+      "routing": "evidence",
+      "routing_reason": "The resolved counterpart to openalex-ambiguous, and the baseline the 522x size comparison is taken against. Also the record of why declared handles are checked against the works payload rather than against an author record: the orcid key here is present and null, so even the successful search returns nothing for a declared ORCID to be checked against.",
+      "capture": {
+        "example": "https://api.openalex.org/authors?search=Vitalik%20Buterin",
+        "measured_bytes": 6800,
+        "captured_bytes": 6814,
+        "captured_note": "1 result, meta.count 1, pin A5069172917 present, works_count 22, last known institution Ethereum Foundation. One caveat on expect.has_orcid_field: the orcid key is present but its value is null for this author, so the field holds structurally while there is nothing for a declared ORCID to be checked against. A registration check written against this fixture has to treat null as absent evidence rather than as agreement."
+      },
+      "expect": {
+        "stable_id": "A5069172917",
+        "has_orcid_field": true,
+        "note": "The orcid field is what a declared ORCID would have been checked against had registration resolved names. It does not, so the same comparison is made against authorships[].author.orcid in the works payload instead, where 48 of 97 slots carry a value. A contradiction is [EXPECTED] and reverts before any screening runs."
+      }
+    }
+  ]
+}
