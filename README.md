@@ -29,7 +29,7 @@ src/components              interface
 src/lib/genlayer            client plumbing, shared across the three builds
 tests/static                AST/source policy checks
 tests/direct                executed contract tests, run with pytest on gltest
-tests/e2e                   Playwright, run against the deployed origin
+tests/e2e                   Playwright, run against a served production build or explicit E2E_BASE_URL
 ```
 
 ## Verify
