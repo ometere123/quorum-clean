@@ -1,8 +1,9 @@
 {
-  "status": "NOT PROVEN LIVE",
+  "status": "CANONICAL DEPLOYMENT; LIVE EXERCISES PENDING",
   "network": "studionet",
-  "contract": null,
-  "transactions": [],
-  "reason": "No representative live flow is claimed until a finalized current-source deployment is available.",
+  "contract": "0x96FDeDdab60F6381af442b226672360760D07ff3",
+  "deployment": { "tx": "0xc7119e0c1090916809fca5f7c74d0c9c22c9f53b8f2d41e1a6d1e77f00417444", "finality": "FINALIZED", "genvm": "SUCCESS", "rpcResult": "0x1", "gitCommit": "51aa1c728ac82096a6a6161b84212528f3c51d39", "sourceSha256": "1354cc0bb345bb2f39961c2e95aac936ac1d857bdf6389fff10fe344a5a5da02", "sourceBytes": 196476, "sourceParity": "PASS", "schema": "PASS", "safeRead": { "method": "list_rounds", "args": [], "result": [] }, "valueInvariant": { "contractBalanceWei": "0", "openBondObligationsWei": "0", "unexplainedWei": "0" } },
+  "transactions": [{"label":"round creation","tx":"0x388830a3abc64c867e8a5f7a6eb711d111d75fce4388acc5571e3bca5b3e6e80","method":"create_round","args":["qc-final-1","Review",2020,2026],"caller":"0xb29Ead15B1E8A2420faE84de974088f67a15ccC2","recipient":"0x96FDeDdab60F6381af442b226672360760D07ff3","valueWei":"0","finality":"FINALIZED","genvm":"SUCCESS","return":"round qc-final-1 opened","stateAfter":{"list_rounds":[{"id":"qc-final-1","status":"OPEN","window":"2020..2026 inclusive","pairs_requested":"0"}]},"proofStatus":"PROVEN LIVE"}],
+  "reason": "Canonical deployment is verified; representative payable live exercises remain limited and are labelled individually.",
   "directOnly": ["round and scope validation", "participant registration rules", "missing-evidence status gates", "appeal and bond safety checks"]
 }

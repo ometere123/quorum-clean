@@ -1,10 +1,13 @@
 {
-  "canonicalStatus": "NOT PROVEN LIVE",
+  "canonicalStatus": "CANONICAL",
   "network": "studionet",
-  "contract": null,
-  "deploymentTransaction": null,
-  "sourceCommit": null,
-  "sourceSha256": null,
-  "contractBytes": null,
-  "reason": "No finalized StudioNet deployment is carried for the current source. The live address must be added only with byte-for-byte parity and schema evidence."
+  "contract": "0x96FDeDdab60F6381af442b226672360760D07ff3",
+  "deploymentTransaction": "0xc7119e0c1090916809fca5f7c74d0c9c22c9f53b8f2d41e1a6d1e77f00417444",
+  "sourceCommit": "51aa1c728ac82096a6a6161b84212528f3c51d39",
+  "sourceSha256": "1354cc0bb345bb2f39961c2e95aac936ac1d857bdf6389fff10fe344a5a5da02",
+  "contractBytes": 196476,
+  "deployedSourceVerified": true,
+  "schemaVerified": true,
+  "deploymentFinalizedAt": "2026-09-01T23:05:02.448833+00:00",
+  "reason": "Finalized StudioNet deployment with GenVM SUCCESS, callable schema, and raw byte-for-byte source parity."
 }

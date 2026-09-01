@@ -12,9 +12,9 @@ Submission record: [`docs/SUBMISSION.md`](docs/SUBMISSION.md)
 ## Status
 
 Current status: the contract, fixture register, round matrix, wallet-gated write rail, and
-deterministic read decoders are wired. A canonical StudioNet deployment is **NOT PROVEN LIVE**
-until a current-source contract address, finalized deployment transaction, source parity, schema
-parity, and re-readable evidence are recorded in `DEPLOYMENT.json` and `evidence/studionet.json`.
+deterministic read decoders are wired. Canonical StudioNet deployment:
+`0x96FDeDdab60F6381af442b226672360760D07ff3` (finalized, GenVM SUCCESS, source/schema parity
+recorded). Representative payable live exercises remain explicitly limited in the evidence record.
 
 The repository contains three deliberately separate proof layers: frontend tests, static contract
 audit checks in `tests/static`, and genuine GenVM Direct Mode execution tests in `tests/direct`.
