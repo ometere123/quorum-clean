@@ -1,6 +1,6 @@
 import { DATA_MODE } from "./genlayer/config.ts";
 import * as live from "./live-reads.ts";
-import { MOCK_APPEALS, MOCK_BOND_WEI, MOCK_ROUNDS, MOCK_SCREENINGS, MOCK_STATS, MOCK_SUMMARIES } from "./mock-data.ts";
+import { MOCK_BOND_WEI, MOCK_ROUNDS, MOCK_SCREENINGS, MOCK_STATS, MOCK_SUMMARIES } from "./mock-data.ts";
 import { available, notFound, type ReadResult } from "./genlayer/read-result.ts";
 import type { Appeal, ContractStats, Round, RoundSummary, Screening } from "./contract-types.ts";
 

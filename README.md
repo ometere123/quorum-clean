@@ -12,7 +12,9 @@ Design system: `../genlayer-prds/design-systems.md`
 
 ## Status
 
-Scaffolded. The contract and the interface are in progress.
+Release candidate surface: the contract, fixture register, round matrix, wallet-gated write rail,
+and deterministic read decoders are wired. Live deployment verification remains environment-bound
+until a contract address is configured in `.env.local`.
 
 ## Layout
 

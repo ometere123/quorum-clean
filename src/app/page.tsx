@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { rounds, sourceLabel, stats, summary } from "@/lib/data-source";
 import type { ContractStats, Round, RoundSummary } from "@/lib/contract-types";
 import { parseCount } from "@/lib/contract-types";
+import { QuorumActions } from "@/components/quorum-actions";
 
 export default function HomePage() {
   const [items, setItems] = useState<Round[]>([]);
@@ -32,7 +33,7 @@ export default function HomePage() {
     {error ? <p className="qc-alert">{error} No fixture has been substituted.</p> : null}
     {totals ? <section className="qc-stats"><Stat label="Rounds" value={totals.rounds}/><Stat label="Screenings" value={totals.screenings}/><Stat label="Conflicts" value={totals.conflict}/><Stat label="Appeals" value={totals.appeals}/></section> : null}
     <section><div className="qc-section-head"><span className="qc-label">ROUNDS</span><span className="qc-record">{items.length} records</span></div><div className="qc-rounds">{items.map((round) => { const item = summaries[round.id]; return <article className="qc-card" key={round.id}><div className="qc-card-top"><span className="qc-label">{round.status}</span><span className="qc-record">{round.coi_start_year}—{round.coi_end_year}</span></div><h2 className="qc-heading">{round.name}</h2><p className="qc-note">{item ? `${item.reviewers.length} reviewers × ${item.applicants.length} applicants · ${item.requested} requested` : "Summary unavailable"}</p><div className="qc-counts">{item ? <><Count label="CLEAR" value={item.clear} tone="cleared"/><Count label="CONFLICT" value={item.conflict} tone="conflict"/><Count label="UNSCREENED" value={item.unscreened} tone="hole"/><Count label="INSUFFICIENT" value={item.insufficient} tone="unclear"/></> : null}</div><Link className="qc-link" href={`/rounds/${round.id}`}>Open round →</Link></article>; })}</div></section>
-    <footer className="qc-footer"><span>Clear means: no publicly evidenced tie found in sources that answered.</span><span>Weight is a read surface; the scoring system decides whether to honour it.</span></footer>
+    <p><Link className="qc-link" href="/manage">Open the wallet action rail →</Link></p><QuorumActions /><footer className="qc-footer"><span>Clear means: no publicly evidenced tie found in sources that answered.</span><span>Weight is a read surface; the scoring system decides whether to honour it.</span></footer>
   </main>;
 }
 
