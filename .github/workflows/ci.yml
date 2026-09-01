@@ -44,7 +44,11 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      - run: npm run test:static
       - run: npm run test:direct
       - run: python -m py_compile contracts/QuorumClean.py
       - run: genvm-lint check contracts/QuorumClean.py --json
       - run: npm run build
+      - name: Install Chromium for browser checks
+        run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e

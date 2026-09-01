@@ -13,10 +13,11 @@
     "verify:schema": "node scripts/verify-schema.mjs",
     "verify:deployment": "node scripts/verify-deployment-source.mjs",
     "verify:emdash": "python scripts/emdash-check.py .",
+    "test:static": "python -m pytest tests/static -q",
     "test:direct": "python -m pytest tests/direct -q",
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "test:e2e": "playwright test",
-    "verify": "npm test && npm run test:direct && npm run verify:emdash && npm run typecheck && npm run lint && npm run build",
+    "verify": "npm test && npm run test:static && npm run test:direct && npm run verify:emdash && npm run typecheck && npm run lint && npm run build",
     "check": "npm run verify"
   },
   "dependencies": {

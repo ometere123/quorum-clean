@@ -94,11 +94,11 @@ const isRound = (value: unknown): value is Round => {
     str(value.id) !== null &&
     str(value.operator) !== null &&
     str(value.name) !== null &&
-    addressList(value.reviewers) !== null &&
-    addressList(value.applicants) !== null &&
+    (value.reviewers === undefined || addressList(value.reviewers) !== null) &&
+    (value.applicants === undefined || addressList(value.applicants) !== null) &&
     status !== null &&
     isRoundStatus(status) &&
-    str(value.created_at) !== null &&
+    (value.created_at === undefined || str(value.created_at) !== null) &&
     num(value.coi_start_year) !== null &&
     num(value.coi_end_year) !== null
   );
@@ -112,7 +112,7 @@ const asRound = (value: Record<string, unknown>): Round => ({
   reviewers: addressList(value.reviewers) ?? [],
   applicants: addressList(value.applicants) ?? [],
   status: String(value.status) as Round["status"],
-  created_at: String(value.created_at),
+  created_at: str(value.created_at) ?? "",
   coi_start_year: num(value.coi_start_year) ?? "",
   coi_end_year: num(value.coi_end_year) ?? "",
 });
@@ -181,15 +181,19 @@ const isSummary = (value: unknown): value is RoundSummary => {
     "unscreened",
     "appeals_open",
   ];
-  return (
-    isParticipantList(record.participants) && counts.every((field) => num(record[field]) !== null)
+  return isParticipantList(record.participants) && counts.every((field) =>
+    field === "pairs" ? record[field] === undefined || num(record[field]) !== null : num(record[field]) !== null,
   );
 };
 
-const asSummary = (value: Record<string, unknown>): RoundSummary => ({
+const asSummary = (value: Record<string, unknown>): RoundSummary => {
+  const participants = isParticipantList(value.participants) ? value.participants : [];
+  return {
   ...asRound(value),
-  participants: isParticipantList(value.participants) ? value.participants : [],
-  pairs: num(value.pairs) ?? "0",
+  reviewers: participants.filter((item) => item.role === "REVIEWER").map((item) => item.addr),
+  applicants: participants.filter((item) => item.role === "APPLICANT").map((item) => item.addr),
+  participants,
+  pairs: num(value.pairs) ?? String(participants.filter((item) => item.role === "REVIEWER").length * participants.filter((item) => item.role === "APPLICANT").length),
   requested: num(value.requested) ?? "0",
   pending: num(value.pending) ?? "0",
   clear: num(value.clear) ?? "0",
@@ -198,21 +202,7 @@ const asSummary = (value: Record<string, unknown>): RoundSummary => ({
   insufficient: num(value.insufficient) ?? "0",
   unscreened: num(value.unscreened) ?? "0",
   appeals_open: num(value.appeals_open) ?? "0",
-});
-
-const isStats = (value: unknown): value is ContractStats => {
-  if (!isRecord(value)) return false;
-  return [
-    "rounds",
-    "participants",
-    "screenings",
-    "clear",
-    "conflict",
-    "material_unclear",
-    "insufficient",
-    "appeals",
-    "overturned",
-  ].every((field) => num(value[field]) !== null);
+  };
 };
 
 const isWeightAnswer = (value: unknown): value is WeightAnswer => {
@@ -240,7 +230,7 @@ const INVALID = (what: string) => `The contract returned something that is not a
 
 export const rounds = async (): Promise<ReadResult<Round[]>> => {
   const result = await performRead<unknown[]>(
-    () => call("list_rounds", [0n, 200n]),
+    () => call("list_rounds", []),
     (value): value is unknown[] => Array.isArray(value),
     INVALID("list of rounds"),
   );
@@ -252,13 +242,9 @@ export const rounds = async (): Promise<ReadResult<Round[]>> => {
 };
 
 export const round = async (id: string): Promise<ReadResult<Round>> => {
-  const result = await performRead<Round>(
-    () => call("get_round", [id]),
-    isRound,
-    INVALID("round"),
-  );
+  const result = await summary(id);
   if (result.kind !== "AVAILABLE") return result;
-  return { kind: "AVAILABLE", value: asRound(result.value as never) };
+  return { kind: "AVAILABLE", value: result.value };
 };
 
 export const summary = async (id: string): Promise<ReadResult<RoundSummary>> => {
@@ -273,7 +259,7 @@ export const summary = async (id: string): Promise<ReadResult<RoundSummary>> => 
 
 export const screenings = async (roundId: string): Promise<ReadResult<Screening[]>> => {
   const result = await performRead<Screening[]>(
-    () => call("list_screenings", [roundId, 0n, 2000n]),
+    () => call("list_screenings", [roundId]),
     isScreeningList,
     INVALID("list of screenings"),
   );
@@ -294,8 +280,28 @@ export const screening = async (id: string): Promise<ReadResult<Screening>> => {
 export const appeal = async (id: string): Promise<ReadResult<Appeal>> =>
   performRead<Appeal>(() => call("get_appeal", [id]), isAppeal, INVALID("appeal"));
 
-export const stats = async (): Promise<ReadResult<ContractStats>> =>
-  performRead<ContractStats>(() => call("stats", []), isStats, INVALID("stats record"));
+export const stats = async (): Promise<ReadResult<ContractStats>> => {
+  const result = await performRead<Record<string, unknown>>(
+    () => call("ledger", []),
+    isRecord,
+    INVALID("ledger record"),
+  );
+  if (result.kind !== "AVAILABLE") return result as ReadResult<ContractStats>;
+  const ledger = result.value;
+  const count = (key: string) => num(ledger[key]) ?? "0";
+  const value: ContractStats = {
+    rounds: count("rounds_created"),
+    participants: count("participants_registered"),
+    screenings: count("screenings_requested"),
+    clear: "0",
+    conflict: "0",
+    material_unclear: "0",
+    insufficient: "0",
+    appeals: count("appeals_filed"),
+    overturned: count("appeals_overturned"),
+  };
+  return { kind: "AVAILABLE", value };
+};
 
 export const weight = async (
   roundId: string,
@@ -303,7 +309,7 @@ export const weight = async (
   applicant: string,
 ): Promise<ReadResult<WeightAnswer>> =>
   performRead<WeightAnswer>(
-    () => call("get_weight", [roundId, reviewer, applicant]),
+    () => call("get_weight", [`${roundId}:${reviewer.toLowerCase()}:${applicant.toLowerCase()}`]),
     isWeightAnswer,
     INVALID("weight answer"),
   );

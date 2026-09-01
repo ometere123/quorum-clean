@@ -24,12 +24,15 @@ state. Otherwise the status is **NOT PROVEN LIVE**.
 ```text
 npm ci
 npm run verify
+python -m pytest tests/static -q
 python -m pytest tests/direct -q
 npm run verify:deployment
 npm run verify:schema
 ```
 
-The contract shape and adversarial deterministic paths are **PROVEN DIRECT**. Live identities must
+The source-level contract shape and adversarial policy checks are **PROVEN STATIC**, not Direct
+Mode. The executed contract lifecycle suite is **PROVEN DIRECT** only for the cases it actually
+runs through the GenVM SDK. Live identities must
 be public test identities or ethically appropriate examples; the system must never label a real
 person conflicted from an unverified fixture. Live source outage, ambiguity, appeal and funded
 refusal branches are **NOT PROVEN LIVE** unless evidence lists finalized hashes and stored state.

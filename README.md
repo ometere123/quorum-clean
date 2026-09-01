@@ -11,9 +11,14 @@ Submission record: [`docs/SUBMISSION.md`](docs/SUBMISSION.md)
 
 ## Status
 
-Release candidate surface: the contract, fixture register, round matrix, wallet-gated write rail,
-and deterministic read decoders are wired. Live deployment verification remains environment-bound
-until a contract address is configured in `.env.local`.
+Current status: the contract, fixture register, round matrix, wallet-gated write rail, and
+deterministic read decoders are wired. A canonical StudioNet deployment is **NOT PROVEN LIVE**
+until a current-source contract address, finalized deployment transaction, source parity, schema
+parity, and re-readable evidence are recorded in `DEPLOYMENT.json` and `evidence/studionet.json`.
+
+The repository contains three deliberately separate proof layers: frontend tests, static contract
+audit checks in `tests/static`, and genuine GenVM Direct Mode execution tests in `tests/direct`.
+Static checks are not presented as Direct Mode.
 
 ## Layout
 
@@ -22,7 +27,8 @@ contracts/QuorumClean.py     the whole product
 src/app                     Next.js routes
 src/components              interface
 src/lib/genlayer            client plumbing, shared across the three builds
-tests/direct                contract tests, run with pytest on gltest
+tests/static                AST/source policy checks
+tests/direct                executed contract tests, run with pytest on gltest
 tests/e2e                   Playwright, run against the deployed origin
 ```
 
@@ -32,8 +38,9 @@ tests/e2e                   Playwright, run against the deployed origin
 npm run verify
 ```
 
-Runs the frontend unit tests, the contract tests, the em dash check, the type check, the
-linter and the production build, in that order.
+Runs frontend tests, static checks, executed Direct Mode tests, the em dash check, typecheck,
+lint and the production build, in that order. Deployment and live-evidence verification are
+separate and fail closed when no canonical deployment is recorded.
 
 The repository is self-contained; Direct Mode uses `tests/direct` and does not require a
 workspace sibling.

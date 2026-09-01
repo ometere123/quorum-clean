@@ -31,10 +31,16 @@ export default defineConfig({
   timeout: 90_000,
   expect: { timeout: 30_000 },
   use: {
-    baseURL: process.env.E2E_BASE_URL || "https://quorum-clean-genlayer.vercel.app",
+    baseURL: process.env.E2E_BASE_URL || "http://127.0.0.1:3212",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "off",
+  },
+  webServer: {
+    command: "npm run start -- -p 3212",
+    url: "http://127.0.0.1:3212",
+    reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 });

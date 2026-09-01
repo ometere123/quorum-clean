@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CONTRACT_ADDRESS } from "@/lib/genlayer/config";
 import { createInjectedClient } from "@/lib/genlayer/client";
 import { waitAccepted, writeContract } from "@/lib/genlayer/tx";
@@ -14,6 +14,36 @@ export function QuorumActions({ roundId = "" }: { roundId?: string }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const set = (key: string) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setFields((current) => ({ ...current, [key]: event.target.value }));
+
+  useEffect(() => {
+    const provider = window.ethereum;
+    if (!provider?.on) return;
+    const accountsChanged = (...args: unknown[]) => {
+      const next = Array.isArray(args[0]) ? args[0][0] : undefined;
+      if (typeof next === "string" && /^0x[0-9a-fA-F]{40}$/.test(next)) {
+        setAccount(next as `0x${string}`);
+        setMessage("Wallet account changed. Review the caller before sending a write.");
+      } else {
+        setAccount(null);
+        setMessage("Wallet account removed. Writes are closed until you connect again.");
+      }
+    };
+    const chainChanged = (...args: unknown[]) => {
+      setMessage(`Wallet network changed to ${String(args[0] ?? "unknown")}. Writes remain closed until the expected network is active.`);
+    };
+    const disconnected = () => {
+      setAccount(null);
+      setMessage("Wallet disconnected. Writes are closed.");
+    };
+    provider.on("accountsChanged", accountsChanged);
+    provider.on("chainChanged", chainChanged);
+    provider.on("disconnect", disconnected);
+    return () => {
+      provider.removeListener?.("accountsChanged", accountsChanged);
+      provider.removeListener?.("chainChanged", chainChanged);
+      provider.removeListener?.("disconnect", disconnected);
+    };
+  }, []);
 
   async function connect() {
     const provider = window.ethereum;

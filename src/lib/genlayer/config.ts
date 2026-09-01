@@ -54,5 +54,5 @@ export const REQUIRED_METHODS = [
   "get_screening",
   "list_screenings",
   "round_summary",
-  "stats",
+  "ledger",
 ];

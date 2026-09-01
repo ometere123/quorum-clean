@@ -24,7 +24,7 @@ const required = [
   "get_screening",
   "list_screenings",
   "round_summary",
-  "stats",
+  "ledger",
 ];
 
 if (!address) {
