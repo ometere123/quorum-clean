@@ -69,6 +69,12 @@ const addressList = (value: unknown): string[] | null => {
   return out;
 };
 
+const roundWindow = (value: unknown): { start: string; end: string } | null => {
+  if (typeof value !== "string") return null;
+  const match = /^(\d{4})\.\.(\d{4}) inclusive$/.exec(value.trim());
+  return match ? { start: match[1], end: match[2] } : null;
+};
+
 const isParticipant = (value: unknown): value is Participant => {
   if (!isRecord(value)) return false;
   const role = str(value.role);
@@ -90,17 +96,22 @@ const isParticipantList = (value: unknown): value is Participant[] =>
 const isRound = (value: unknown): value is Round => {
   if (!isRecord(value)) return false;
   const status = str(value.status);
+  const window = roundWindow(value.window);
+  const hasDetailLists = value.reviewers !== undefined || value.applicants !== undefined;
+  const hasSummaryCounts = value.reviewers_count !== undefined || value.applicants_count !== undefined;
+  const startYear = num(value.coi_start_year) ?? window?.start ?? null;
+  const endYear = num(value.coi_end_year) ?? window?.end ?? null;
   return (
     str(value.id) !== null &&
     str(value.operator) !== null &&
     str(value.name) !== null &&
-    (value.reviewers === undefined || addressList(value.reviewers) !== null) &&
-    (value.applicants === undefined || addressList(value.applicants) !== null) &&
+    ((hasDetailLists && addressList(value.reviewers ?? []) !== null && addressList(value.applicants ?? []) !== null) ||
+      (hasSummaryCounts && window !== null && num(value.reviewers_count) !== null && num(value.applicants_count) !== null)) &&
     status !== null &&
     isRoundStatus(status) &&
     (value.created_at === undefined || str(value.created_at) !== null) &&
-    num(value.coi_start_year) !== null &&
-    num(value.coi_end_year) !== null
+    startYear !== null &&
+    endYear !== null
   );
 };
 
@@ -113,8 +124,8 @@ const asRound = (value: Record<string, unknown>): Round => ({
   applicants: addressList(value.applicants) ?? [],
   status: String(value.status) as Round["status"],
   created_at: str(value.created_at) ?? "",
-  coi_start_year: num(value.coi_start_year) ?? "",
-  coi_end_year: num(value.coi_end_year) ?? "",
+  coi_start_year: num(value.coi_start_year) ?? roundWindow(value.window)?.start ?? "",
+  coi_end_year: num(value.coi_end_year) ?? roundWindow(value.window)?.end ?? "",
 });
 
 const isScreening = (value: unknown): value is Screening => {
