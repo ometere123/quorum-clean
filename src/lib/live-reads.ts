@@ -192,9 +192,11 @@ const isSummary = (value: unknown): value is RoundSummary => {
     "unscreened",
     "appeals_open",
   ];
-  return isParticipantList(record.participants) && counts.every((field) =>
-    field === "pairs" ? record[field] === undefined || num(record[field]) !== null : num(record[field]) !== null,
-  );
+  return isParticipantList(record.participants) && counts.every((field) => {
+    if (field === "pairs") return record[field] === undefined || num(record[field]) !== null;
+    if (field === "requested") return num(record.requested) !== null || num(record.pairs_requested) !== null;
+    return num(record[field]) !== null;
+  });
 };
 
 const asSummary = (value: Record<string, unknown>): RoundSummary => {
@@ -205,7 +207,7 @@ const asSummary = (value: Record<string, unknown>): RoundSummary => {
   applicants: participants.filter((item) => item.role === "APPLICANT").map((item) => item.addr),
   participants,
   pairs: num(value.pairs) ?? String(participants.filter((item) => item.role === "REVIEWER").length * participants.filter((item) => item.role === "APPLICANT").length),
-  requested: num(value.requested) ?? "0",
+  requested: num(value.requested) ?? num(value.pairs_requested) ?? "0",
   pending: num(value.pending) ?? "0",
   clear: num(value.clear) ?? "0",
   conflict: num(value.conflict) ?? "0",
