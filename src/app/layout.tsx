@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body><div className="qc-provenance" role="status">{sourceLabel} · StudioNet</div>{children}</body></html>;
+  return <html lang="en"><body><div className="qc-provenance" role="status">DATA MODE · {sourceLabel === "LIVE CONTRACT" ? "LIVE" : "FIXTURES"} · StudioNet</div>{children}</body></html>;
 }
