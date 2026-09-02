@@ -16,6 +16,15 @@ export const summary = (id: string): Promise<ReadResult<RoundSummary>> =>
 export const screenings = (id: string): Promise<ReadResult<Screening[]>> =>
   isLive ? live.screenings(id) : Promise.resolve(available(MOCK_SCREENINGS[id] ?? []));
 
+export const screening = (id: string): Promise<ReadResult<Screening>> =>
+  isLive
+    ? live.screening(id)
+    : Promise.resolve(
+        MOCK_SCREENINGS[id]?.find((row) => row.id === id)
+          ? available(MOCK_SCREENINGS[id].find((row) => row.id === id) as Screening)
+          : notFound(),
+      );
+
 export const appeal = (id: string): Promise<ReadResult<Appeal>> =>
   isLive ? live.appeal(id) : Promise.resolve(notFound());
 
