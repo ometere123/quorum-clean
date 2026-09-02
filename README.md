@@ -15,6 +15,7 @@ Current status: the contract, fixture register, round matrix, wallet-gated write
 deterministic read decoders are wired. Canonical StudioNet deployment:
 `0x96FDeDdab60F6381af442b226672360760D07ff3` (finalized, GenVM SUCCESS, source/schema parity
 recorded). Representative payable live exercises remain explicitly limited in the evidence record.
+Live app: https://quorum-clean-k9uwcwp5p-delealufejoel-4184s-projects.vercel.app
 
 The repository contains three deliberately separate proof layers: frontend tests, static contract
 audit checks in `tests/static`, and genuine GenVM Direct Mode execution tests in `tests/direct`.

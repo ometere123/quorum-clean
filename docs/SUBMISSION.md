@@ -17,6 +17,8 @@ This declaration is therefore an explicit integration trust boundary, not a trus
 
 ## Deployment and verification
 
+Live app: https://quorum-clean-k9uwcwp5p-delealufejoel-4184s-projects.vercel.app
+
 `DEPLOYMENT.json` and `evidence/studionet.json` record the canonical deployment at
 `0x96FDeDdab60F6381af442b226672360760D07ff3`, transaction
 `0xc7119e0c1090916809fca5f7c74d0c9c22c9f53b8f2d41e1a6d1e77f00417444`, with finalized GenVM
