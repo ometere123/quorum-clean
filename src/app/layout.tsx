@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { sourceLabel } from "@/lib/data-source";
 
 export const metadata: Metadata = {
   title: { default: "Quorum Clean", template: "%s · Quorum Clean" },
@@ -7,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body>{children}</body></html>;
+  return <html lang="en"><body><div className="qc-provenance" role="status">{sourceLabel} · StudioNet</div>{children}</body></html>;
 }
