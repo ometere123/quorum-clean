@@ -33,6 +33,13 @@ tests/direct                executed contract tests, run with pytest on gltest
 tests/e2e                   Playwright, run against a served production build or explicit E2E_BASE_URL
 ```
 
+## Reviewer routes
+
+`/` is the live dashboard. Use `/rounds` for the register, `/rounds/new` to open a round,
+`/rounds/[id]` for its evidence overview, and the linked participants, scope and screenings
+routes for focused workflow areas. `/manage` is retained as a technical wallet action rail;
+normal users should start from a round page. `/activity` shows contract counters.
+
 ## Verify
 
 ```

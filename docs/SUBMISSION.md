@@ -15,6 +15,14 @@ GitHub repositories and organisations are operator-declared scope. The contract 
 when screening begins; it cannot independently discover every repository or private affiliation.
 This declaration is therefore an explicit integration trust boundary, not a trustless fact.
 
+## Reviewer walkthrough
+
+Start at the live dashboard, open `/rounds`, then open `qc-final-1`. The round detail page keeps
+the lifecycle and screening table together; participants, frozen scope and screening evidence are
+separate routes. `/rounds/new` is the focused creation flow. `/manage` remains available for
+technical wallet actions, while `/activity` exposes contract counters. The production app never
+substitutes fixtures for a failed live read.
+
 ## Deployment and verification
 
 Live app: https://quorum-clean.vercel.app
