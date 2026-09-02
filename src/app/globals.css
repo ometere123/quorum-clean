@@ -444,3 +444,6 @@ body {
   background: color-mix(in srgb, var(--blue) 20%, transparent);
   color: var(--ink);
 }
+
+.qc-nav{display:flex;flex-wrap:wrap;gap:18px;border-bottom:1px solid var(--rule);padding:12px 0;font:500 11px/14px var(--font-display);letter-spacing:.08em;text-transform:uppercase}.qc-nav a{color:var(--ink);text-decoration:none}.qc-nav a:hover{text-decoration:underline}.qc-next{display:flex;justify-content:space-between;gap:24px;align-items:center;border:1px solid var(--rule-strong);padding:18px;margin:28px 0}.qc-actions-inline{display:flex;flex-wrap:wrap;gap:10px}.qc-btn-quiet{display:inline-block;font-family:var(--font-display);font-weight:500;font-size:11px;line-height:14px;letter-spacing:.1em;text-transform:uppercase;padding:11px 16px;border:1px solid var(--rule-strong);border-radius:2px;color:var(--ink);background:transparent;text-decoration:none}.qc-btn-quiet:hover{text-decoration:underline}@media(max-width:650px){.qc-next{display:block}.qc-actions-inline{margin-top:16px}}
+.qc-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:18px 0}@media(max-width:650px){.qc-form-grid{grid-template-columns:1fr}}
