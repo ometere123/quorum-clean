@@ -148,6 +148,13 @@ export type Round = {
   /** Whole calendar years, closed at both ends. Declared by the operator, never computed. */
   coi_start_year: string;
   coi_end_year: string;
+  /**
+   * `list_rounds()` returns these counts but not the address arrays above, which are only
+   * populated by `round_summary()`. A screen reading `list_rounds()` must count from here, not
+   * from `reviewers.length` / `applicants.length`, which are always empty on that read.
+   */
+  reviewers_count: string;
+  applicants_count: string;
 };
 
 export type Screening = {
@@ -172,6 +179,8 @@ export type Screening = {
   rationale: string;
   screened_at: string;
   appeal_id: string;
+  /** Embedded by `get_screening` directly; absent (never read) on `list_screenings` rows. */
+  appeal?: ScreeningAppeal;
 };
 
 export type Appeal = {
@@ -187,6 +196,13 @@ export type Appeal = {
   rationale: string;
   settled_at: string;
 };
+
+/**
+ * `get_screening` embeds this directly (`null` when no appeal has been filed). There is no
+ * `get_appeal(id)` method on the contract, so a screening's appeal is only ever read this way,
+ * or via `list_appeals(round_id)`. See `src/lib/live-reads.ts`.
+ */
+export type ScreeningAppeal = Appeal | null;
 
 /**
  * `round_summary(id)` returns the round plus its counts per verdict, including `UNSCREENED`.
@@ -219,41 +235,39 @@ export type RoundSummary = {
   /** Screenings whose verdict is UNSCREENED, meaning no handle was declared to look up. */
   unscreened: string;
   appeals_open: string;
-};
-
-export type ContractStats = {
-  rounds: string;
-  participants: string;
-  screenings: string;
-  clear: string;
-  conflict: string;
-  material_unclear: string;
-  insufficient: string;
-  appeals: string;
-  overturned: string;
+  /**
+   * Flips true at the first `screen()` call in the round, not at the first `request_screening`
+   * (the round's `status` moves to `SCREENING` earlier, at request time, and must not be used as
+   * a proxy for this). The GitHub scope can still legitimately change up until this is true.
+   */
+  window_frozen: boolean;
+  github_scope_declared: boolean;
 };
 
 /**
- * What `get_weight` answers with.
- *
- * A bare number would be a false economy on the integration surface. `CLEAR` and `UNSCREENED`
- * both carry 10000, so a caller receiving `10000` alone cannot tell a reviewer who was screened
- * and found clean from a reviewer nobody ever looked at. The status and the flag travel with
- * the number so that distinction survives the call.
+ * Field for field what `ledger()` returns. There is no per-verdict breakdown here (no global
+ * `clear` / `conflict` / ... counters exist on the contract) — that only exists per round, on
+ * `RoundSummary`. Keeping these keys identical to the contract's own field names means the
+ * activity page can render them directly with no translation step to drift out of sync.
  */
-export type WeightAnswer = {
-  round_id: string;
-  reviewer: string;
-  applicant: string;
-  weight_bp: string;
-  status: ScreeningStatus;
-  /** True for everything except `CLEAR`. `UNSCREENED` is flagged at full weight. */
-  flagged: boolean;
-  /** False when no screening record exists for the pair. */
-  screened: boolean;
-  /** Empty when `screened` is false. */
-  screening_id: string;
-  note: string;
+export type ContractStats = {
+  rounds_created: string;
+  participants_registered: string;
+  screenings_requested: string;
+  screenings_resolved: string;
+  screening_attempts: string;
+  prompts_run: string;
+  appeals_filed: string;
+  appeals_overturned: string;
+  total_bonded_wei: string;
+  total_returned_wei: string;
+  total_forfeited_wei: string;
+  total_bounty_paid_wei: string;
+};
+
+/** Field for field what `parameters()` returns. Only the fields this app actually reads. */
+export type Parameters = {
+  min_bond_wei: string;
 };
 
 /* ------------------------------------------------------------------------------------------
@@ -315,7 +329,7 @@ export const SCREENING_STATUS: Record<ScreeningStatus, ScreeningStatusFacts> = {
     retryable: true,
     qualifier: "never screened, so nothing is known either way",
     meaning:
-      "No screening was ever run for this pair. Full weight, and flagged, because never looked at is not the same as looked at and clean.",
+      "The pair had no usable declared evidence or identifiers on any source both parties could be looked up in, so no screening ever ran. Full weight, and flagged, because never looked at is not the same as looked at and clean.",
   },
   CONFLICT: {
     word: "CONFLICT",
@@ -327,7 +341,7 @@ export const SCREENING_STATUS: Record<ScreeningStatus, ScreeningStatusFacts> = {
     retryable: false,
     qualifier: "a specific tie was found and is named",
     meaning:
-      "A named record ties the two declared identities. The vote carries no weight in this round.",
+      "A public record ties the two declared identities and meets this round's configured conflict rule; the vote carries no weight in this round. This is an evidence-based review-screening result, not a finding of misconduct.",
   },
   MATERIAL_UNCLEAR: {
     word: "MATERIAL_UNCLEAR",
@@ -338,7 +352,8 @@ export const SCREENING_STATUS: Record<ScreeningStatus, ScreeningStatusFacts> = {
     flagged: true,
     retryable: false,
     qualifier: "a link exists, its bearing on this decision is not settled",
-    meaning: "A link was found and its materiality was not resolved. Half weight.",
+    meaning:
+      "A public tie was found, but whether it bears on this decision was not resolved, so the deterministic weight mapping applies half weight rather than zero or full. This is an evidence-based review-screening result, not a finding of misconduct.",
   },
   INSUFFICIENT: {
     word: "INSUFFICIENT",
@@ -351,7 +366,7 @@ export const SCREENING_STATUS: Record<ScreeningStatus, ScreeningStatusFacts> = {
     retryable: true,
     qualifier: "a source was unreachable, so no finding was reached",
     meaning:
-      "One or more sources did not answer. No weight was changed and the screening can be run again.",
+      "Evidence this pair needed did not answer, so the pair was not cleared and no other finding was reached either. No weight was changed and the screening can be run again once the source is reachable.",
   },
   PENDING: {
     word: "PENDING",

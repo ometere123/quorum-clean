@@ -12,19 +12,24 @@ if (existsSync(".env.local")) {
 }
 
 const address = process.env.NEXT_PUBLIC_QUORUM_CLEAN_CONTRACT;
+// Kept identical to REQUIRED_METHODS in src/lib/genlayer/config.ts — tests/schema-parity.test.mjs
+// asserts the two have not drifted apart, and that every method the frontend actually calls is
+// covered here, so a call to a nonexistent method cannot pass CI silently again.
 const required = [
   "create_round",
+  "declare_github_scope",
   "register_participant",
   "request_screening",
   "screen",
   "appeal",
   "adjudicate_appeal",
   "lock_round",
-  "get_weight",
-  "get_screening",
-  "list_screenings",
+  "list_rounds",
   "round_summary",
+  "list_screenings",
+  "get_screening",
   "ledger",
+  "parameters",
 ];
 
 if (!address) {

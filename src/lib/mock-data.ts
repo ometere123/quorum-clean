@@ -162,6 +162,8 @@ const ROUND_12: Round = {
   created_at: "2026-07-02T08:00:00Z",
   coi_start_year: "2022",
   coi_end_year: "2026",
+  reviewers_count: String(R12_REVIEWERS.length),
+  applicants_count: String(R12_APPLICANTS.length),
 };
 
 /* ------------------------------------------------------------------------------------------
@@ -229,6 +231,8 @@ const ROUND_11: Round = {
   created_at: "2026-05-11T09:00:00Z",
   coi_start_year: "2021",
   coi_end_year: "2026",
+  reviewers_count: String(R11_REVIEWERS.length),
+  applicants_count: String(R11_APPLICANTS.length),
 };
 
 /* ------------------------------------------------------------------------------------------
@@ -314,6 +318,8 @@ const ROUND_13: Round = {
   created_at: "2026-08-19T13:00:00Z",
   coi_start_year: "2024",
   coi_end_year: "2026",
+  reviewers_count: String(R13_REVIEWERS.length),
+  applicants_count: String(R13_APPLICANTS.length),
 };
 
 export const MOCK_ROUNDS: Round[] = [ROUND_12, ROUND_11, ROUND_13];
@@ -859,6 +865,10 @@ const summarise = (round: Round, participants: Participant[]): RoundSummary => {
     reviewers: round.reviewers,
     applicants: round.applicants,
     participants,
+    // Frozen the moment any pair in the round has actually been screened, exactly like
+    // `screen()` flipping `window_frozen` on the first real call, never at `request_screening`.
+    window_frozen: screenings.some((row) => row.status !== "PENDING"),
+    github_scope_declared: screenings.some((row) => row.sources_checked.includes("GITHUB") || row.sources_failed.includes("GITHUB")),
     pairs: String(round.reviewers.length * round.applicants.length),
     requested: String(screenings.length),
     pending: countStatus(screenings, "PENDING"),
@@ -879,18 +889,26 @@ export const MOCK_SUMMARIES: Record<string, RoundSummary> = {
 
 const ALL_SCREENINGS = [...MOCK_SCREENINGS_R12, ...MOCK_SCREENINGS_R11];
 
+const RESOLVED_STATUSES = ["CLEAR", "CONFLICT", "MATERIAL_UNCLEAR"] as const;
+
+/** Field for field what a real `ledger()` returns — see `ContractStats` in `contract-types.ts`. */
 export const MOCK_STATS: ContractStats = {
-  rounds: String(MOCK_ROUNDS.length),
-  participants: String(
+  rounds_created: String(MOCK_ROUNDS.length),
+  participants_registered: String(
     R12_PARTICIPANTS.length + R11_PARTICIPANTS.length + R13_PARTICIPANTS.length,
   ),
-  screenings: String(ALL_SCREENINGS.length),
-  clear: countStatus(ALL_SCREENINGS, "CLEAR"),
-  conflict: countStatus(ALL_SCREENINGS, "CONFLICT"),
-  material_unclear: countStatus(ALL_SCREENINGS, "MATERIAL_UNCLEAR"),
-  insufficient: countStatus(ALL_SCREENINGS, "INSUFFICIENT"),
-  appeals: String(MOCK_APPEALS.length),
-  overturned: String(MOCK_APPEALS.filter((appeal) => appeal.status === "OVERTURNED").length),
+  screenings_requested: String(ALL_SCREENINGS.length),
+  screenings_resolved: String(
+    ALL_SCREENINGS.filter((row) => (RESOLVED_STATUSES as readonly string[]).includes(row.status)).length,
+  ),
+  screening_attempts: String(ALL_SCREENINGS.filter((row) => row.status !== "PENDING").length),
+  prompts_run: String(countStatus(ALL_SCREENINGS, "MATERIAL_UNCLEAR")),
+  appeals_filed: String(MOCK_APPEALS.length),
+  appeals_overturned: String(MOCK_APPEALS.filter((appeal) => appeal.status === "OVERTURNED").length),
+  total_bonded_wei: "600000000000000000000",
+  total_returned_wei: "400000000000000000000",
+  total_forfeited_wei: "150000000000000000000",
+  total_bounty_paid_wei: "50000000000000000000",
 };
 
 /**

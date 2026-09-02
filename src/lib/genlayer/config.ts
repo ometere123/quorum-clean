@@ -41,18 +41,27 @@ export const EXPLORER_BASE = "https://explorer-studio.genlayer.com";
 export const explorerTxUrl = (hash: string) => `${EXPLORER_BASE}/tx/${hash}`;
 export const explorerAddressUrl = (address: string) => `${EXPLORER_BASE}/address/${address}`;
 
-/** Every method the frontend depends on. `verifyContractSchema` reports which are missing. */
+/**
+ * Every method the frontend depends on. `scripts/verify-schema.mjs` reports which are missing
+ * from the live deployment, and `tests/schema-parity.test.mjs` fails CI if any string literal
+ * used as a `functionName` anywhere under `src/` is absent from this list — so a call to a
+ * nonexistent method (as `screening_bond` and `get_appeal` once were) can no longer go unnoticed.
+ * Kept identical to the `required` array in `scripts/verify-schema.mjs`; that test also checks
+ * the two have not drifted apart.
+ */
 export const REQUIRED_METHODS = [
   "create_round",
+  "declare_github_scope",
   "register_participant",
   "request_screening",
   "screen",
   "appeal",
   "adjudicate_appeal",
   "lock_round",
-  "get_weight",
-  "get_screening",
-  "list_screenings",
+  "list_rounds",
   "round_summary",
+  "list_screenings",
+  "get_screening",
   "ledger",
+  "parameters",
 ];

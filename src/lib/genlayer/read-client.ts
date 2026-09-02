@@ -1,5 +1,5 @@
 import { createAccount, createClient } from "genlayer-js";
-import { chain, GENLAYER_ENDPOINT } from "./config";
+import { chain, GENLAYER_ENDPOINT } from "./config.ts";
 
 /**
  * A client for views only.
