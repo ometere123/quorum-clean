@@ -1,66 +1,64 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap");
 @import "tailwindcss";
 
-.qc-shell{max-width:1120px;margin:0 auto;padding:40px 24px}.qc-header,.qc-card-top,.qc-section-head,.qc-footer,.qc-stats{display:flex;justify-content:space-between;gap:20px;align-items:baseline}.qc-display{font-family:var(--font-display);font-size:30px;line-height:1.1;margin:8px 0 16px}.qc-heading{font-family:var(--font-display);font-size:22px;line-height:1.25}.qc-label{font:500 11px/14px var(--font-display);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-70)}.qc-record{font:13px/18px var(--font-record);font-variant-numeric:tabular-nums}.qc-intro{max-width:700px;border-top:1px solid var(--rule-strong);border-bottom:1px solid var(--rule-strong);padding:18px 0 22px;margin:30px 0}.qc-stats{justify-content:flex-start;border-bottom:1px solid var(--rule);padding:18px 0;margin-bottom:32px}.qc-stats>div{display:grid;gap:5px;min-width:130px}.qc-rounds{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:16px}.qc-card{border:1px solid var(--rule-strong);padding:18px;background:color-mix(in srgb,var(--field) 75%,white)}.qc-card h2{margin:20px 0 8px}.qc-counts{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}.qc-count{display:grid;gap:2px;border-left:4px solid;padding:7px 10px;font:11px/14px var(--font-display);letter-spacing:.05em}.qc-count b{font:18px/20px var(--font-record)}.qc-cleared{border-color:var(--blue)}.qc-conflict{border-color:var(--red)}.qc-unclear{border-color:var(--ochre)}.qc-hole{border-color:var(--rule-strong)}.qc-link{color:var(--blue);text-decoration:underline;text-underline-offset:3px}.qc-alert{border:1px solid var(--red);padding:12px}.qc-footer{border-top:1px solid var(--rule);margin-top:48px;padding-top:16px;font-size:13px}.qc-round-header{border-bottom:1px solid var(--rule-strong);margin:28px 0 24px;padding-bottom:20px}.qc-table-wrap{overflow-x:auto}.qc-table{width:100%;border-collapse:collapse}.qc-table th,.qc-table td{text-align:left;vertical-align:top;border-bottom:1px solid var(--rule);padding:14px 10px}.qc-table th{font:500 11px/14px var(--font-display);letter-spacing:.1em;text-transform:uppercase}.qc-badge{font:500 11px/14px var(--font-display);letter-spacing:.08em;padding:4px 6px}.qc-badge.qc-clear{background:var(--blue);color:var(--field)}.qc-badge.qc-conflict{background:var(--red);color:var(--field)}.qc-badge.qc-material_unclear{background:var(--ochre);color:var(--ink)}.qc-badge.qc-unscreened,.qc-badge.qc-insufficient,.qc-badge.qc-pending{border:1px dashed var(--rule-strong)}.qc-note{font-size:13px;line-height:1.5}@media(max-width:650px){.qc-shell{padding:24px 16px}.qc-header{display:block}.qc-footer{display:block}.qc-footer span{display:block;margin-top:8px}.qc-table{min-width:800px}}
-.qc-actions{border-top:1px solid var(--rule-strong);margin-top:32px;padding-top:20px}.qc-button{border:1px solid var(--rule-strong);background:transparent;color:var(--ink);padding:8px 12px;font:500 11px/14px var(--font-display);letter-spacing:.06em;text-transform:uppercase;cursor:pointer}.qc-button:disabled{opacity:.45;cursor:not-allowed}.qc-button-primary{background:var(--blue);color:var(--field);border-color:var(--blue)}.qc-action-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}.qc-action{border:1px solid var(--rule);padding:14px;display:grid;gap:10px;min-width:0}.qc-field{display:grid;gap:3px;font:11px/14px var(--font-display);letter-spacing:.04em}.qc-field input{width:100%;min-width:0;background:transparent;border:1px solid var(--rule-strong);padding:7px;font:13px/18px var(--font-record)}.qc-action-message{border:1px solid var(--blue);padding:12px;overflow-wrap:anywhere}
-
 /* ==========================================================================
-   Quorum Clean - an Isotype statistical poster.
+   Quorum Clean — evidence board.
 
-   Otto Neurath's Vienna Method exists to stop a statistic from flattering the
-   person publishing it. Its law: to show more, repeat the unit glyph, never
-   enlarge it. Applied here, coverage cannot be inflated by scale and a gap
-   cannot be styled as a colour.
+   The previous system was an Isotype statistical poster: cream ground, flat
+   hairline rules, a unit glyph repeated rather than scaled. This system is
+   its opposite in every dimension that is free to change: a white clinical
+   surface, soft-shadowed cards that lift off the page, pill-shaped verdict
+   chips instead of ruled boxes, and one confident violet accent for
+   structure instead of a caption-only palette. Nothing about *what* is
+   shown changed — every class name below is the one the page already
+   requests — only how it reads.
 
-   --void is the most important token in the system and it is transparent. An
-   UNSCREENED pair is a hole cut in the grid: no fill, no border, the poster
-   ground showing through where a result would be. A grey square or a dash
-   would read as a fourth outcome. Nothing reads as nothing.
-
-   Measured contrast on --field #F1F1EE:
-     blue  #2C5F8A   5.95:1   carries text at any size
-     red   #C8402F   4.40:1   glyphs, fills and 18px+ labels only
-     ochre #D9A335   2.01:1   fill only, never text at any size
-   Where red or ochre must be named, the word is set in --ink beside the mark.
-   src/lib/palette.ts holds those figures and tests/palette.test.mjs recomputes
-   them, so a token added later cannot skip the check.
+   Verdict colour still carries a second, non-colour cue: CONFLICT and
+   MATERIAL_UNCLEAR chips are filled, CLEAR is filled its own hue, and the
+   two "nothing happened" states (UNSCREENED, INSUFFICIENT, PENDING) are
+   drawn as outlined chips on the page ground, never a filled colour, so a
+   hole in the record cannot be mistaken for a finding even in greyscale.
    ========================================================================== */
 
 @theme inline {
-  --color-field: #f1f1ee;
-  --color-ink: #1b1b1b;
-  --color-conflict: #c8402f;
-  --color-cleared: #2c5f8a;
-  --color-unclear: #d9a335;
+  --color-field: #ffffff;
+  --color-ink: #14151a;
+  --color-conflict: #b3261e;
+  --color-cleared: #157a5f;
+  --color-unclear: #a5680a;
 
-  --font-display: var(--font-jost), "Century Gothic", Futura, "Trebuchet MS", sans-serif;
-  --font-body: var(--font-newsreader), "Source Serif 4", "Noto Serif", "Times New Roman", serif;
-  --font-record: var(--font-spline-mono), "Roboto Mono", "Cascadia Mono", Consolas, monospace;
+  --font-display: var(--face-grotesk), "Segoe UI", system-ui, sans-serif;
+  --font-body: var(--face-inter), "Segoe UI", system-ui, sans-serif;
+  --font-record: var(--face-mono), "Cascadia Mono", Consolas, monospace;
 
   --breakpoint-matrix: 760px;
 }
 
 :root {
-  /* Release stack: the intended open face first, then a face already on the
-     machine. No build-time dependency on a font CDN. Jost is a Futura revival,
-     so every fallback here is geometric rather than humanist. */
-  --font-jost: Jost;
-  --font-newsreader: Newsreader;
-  --font-spline-mono: "Spline Sans Mono";
+  --face-grotesk: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --face-inter: "Inter", "Segoe UI", system-ui, sans-serif;
+  --face-mono: "JetBrains Mono", "Cascadia Mono", Consolas, monospace;
 
-  --field: #f1f1ee;
-  --ink: #1b1b1b;
-  --red: #c8402f;
-  --blue: #2c5f8a;
-  --ochre: #d9a335;
+  --field: #ffffff;
+  --field-sunk: #f4f5f8;
+  --ink: #14151a;
+  --red: #b3261e;
+  --blue: #157a5f;
+  --ochre: #a5680a;
   --void: transparent;
+  --accent: #4f46e5;
+  --accent-soft: #eef0fd;
 
-  --rule: color-mix(in srgb, var(--ink) 16%, transparent);
-  --rule-strong: color-mix(in srgb, var(--ink) 34%, transparent);
-  --ink-70: color-mix(in srgb, var(--ink) 70%, transparent);
-  --ink-55: color-mix(in srgb, var(--ink) 55%, transparent);
+  --rule: color-mix(in srgb, var(--ink) 10%, transparent);
+  --rule-strong: color-mix(in srgb, var(--ink) 20%, transparent);
+  --ink-70: color-mix(in srgb, var(--ink) 68%, transparent);
+  --ink-55: color-mix(in srgb, var(--ink) 48%, transparent);
 
-  /* Row height in the matrix. Fixed, because an Isotype row counts units and a
-     row that grows with its content would encode emphasis it has not earned. */
+  --shadow-card: 0 1px 2px color-mix(in srgb, var(--ink) 6%, transparent),
+    0 8px 24px color-mix(in srgb, var(--ink) 7%, transparent);
+  --shadow-card-hover: 0 2px 4px color-mix(in srgb, var(--ink) 8%, transparent),
+    0 16px 36px color-mix(in srgb, var(--ink) 10%, transparent);
+
   --row: 52px;
 }
 
@@ -69,250 +67,532 @@
 }
 
 html {
-  background: var(--field);
+  background: var(--field-sunk);
   color: var(--ink);
   -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--field);
+  background: var(--field-sunk);
   color: var(--ink);
   font-family: var(--font-body);
-  font-size: 16px;
-  line-height: 26px;
+  font-size: 15px;
+  line-height: 24px;
   font-weight: 400;
 }
 
 /* --------------------------------------------------------------------------
-   Type scale: 11 - 13 - 16 - 22 - 30. Nothing else.
+   Shell and layout
+   -------------------------------------------------------------------------- */
+
+.qc-shell {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 40px 24px 64px;
+}
+
+.qc-header,
+.qc-card-top,
+.qc-section-head,
+.qc-footer,
+.qc-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: baseline;
+}
+
+.qc-provenance {
+  border-bottom: 1px solid var(--rule);
+  background: var(--field);
+  padding: 10px 24px;
+  color: var(--ink-70);
+  font: 600 10px/14px var(--font-display);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: right;
+}
+
+.qc-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 0 20px;
+  font: 500 13px/18px var(--font-body);
+}
+
+.qc-nav a {
+  color: var(--ink-70);
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 999px;
+  transition: background-color 140ms ease-out, color 140ms ease-out;
+}
+
+.qc-nav a:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.qc-intro {
+  max-width: 700px;
+  margin: 8px 0 32px;
+}
+
+.qc-intro .qc-heading {
+  margin-bottom: 6px;
+}
+
+.qc-round-header {
+  border-bottom: 1px solid var(--rule);
+  margin: 8px 0 28px;
+  padding-bottom: 24px;
+}
+
+.qc-footer {
+  border-top: 1px solid var(--rule);
+  margin-top: 56px;
+  padding-top: 20px;
+  font-size: 13px;
+  color: var(--ink-55);
+}
+
+.qc-next {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: center;
+  background: var(--field);
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
+  padding: 22px 24px;
+  margin: 28px 0;
+}
+
+.qc-actions-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+@media (max-width: 650px) {
+  .qc-shell {
+    padding: 24px 16px 48px;
+  }
+  .qc-header {
+    display: block;
+  }
+  .qc-header > span {
+    display: block;
+    margin-top: 6px;
+  }
+  .qc-footer {
+    display: block;
+  }
+  .qc-footer span {
+    display: block;
+    margin-top: 8px;
+  }
+  .qc-next {
+    display: block;
+  }
+  .qc-actions-inline {
+    margin-top: 16px;
+  }
+  .qc-table {
+    min-width: 800px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Type
    -------------------------------------------------------------------------- */
 
 .qc-display {
   font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 30px;
-  line-height: 34px;
-  letter-spacing: 0.01em;
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  margin: 4px 0 16px;
 }
 
 .qc-heading {
   font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 22px;
-  line-height: 28px;
-  letter-spacing: 0.01em;
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 1.3;
+  letter-spacing: -0.005em;
 }
 
-.qc-body {
-  font-family: var(--font-body);
-  font-size: 16px;
-  line-height: 26px;
-}
-
-.qc-note {
-  font-family: var(--font-body);
-  font-size: 13px;
-  line-height: 21px;
-}
-
-.qc-record {
-  font-family: var(--font-record);
-  font-size: 13px;
-  line-height: 18px;
-  font-variant-numeric: tabular-nums;
-}
-
-.qc-record-sm {
-  font-family: var(--font-record);
-  font-size: 11px;
-  line-height: 16px;
-  font-variant-numeric: tabular-nums;
-}
-
-/* Poster labels: geometric, uppercase, tracked. A chart caption, not a chip. */
 .qc-label {
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 11px;
-  line-height: 14px;
+  font: 600 11px/14px var(--font-display);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ink-70);
 }
 
-.qc-label-ink {
-  color: var(--ink);
+.qc-record {
+  font: 13px/19px var(--font-record);
+  font-variant-numeric: tabular-nums;
 }
 
-/* Blue is the only accent that may carry text. */
-.qc-blue {
-  color: var(--blue);
-}
-
-/* --------------------------------------------------------------------------
-   Unit glyphs. A shape and a colour and a word, three redundant encodings, so
-   the poster survives colour blindness and greyscale printing.
-   -------------------------------------------------------------------------- */
-
-.qc-glyph {
-  font-family: var(--font-display);
-  font-size: 16px;
-  line-height: 1;
-  display: inline-block;
-}
-
-.qc-glyph-conflict {
-  color: var(--red);
-}
-
-.qc-glyph-cleared {
-  color: var(--blue);
-}
-
-.qc-glyph-unclear {
-  color: var(--ochre);
-}
-
-/* A hole. The whole system turns on this rule, so it is stated once and
-   nothing else is allowed to set a fill on a cell that has no result. */
-.qc-hole {
-  background: var(--void);
-  border: 0;
-  color: var(--ink-55);
-}
-
-/* An attempt that did not close: a source was reached for and did not answer.
-   Still a hole, because nothing was found. The dashed edge is the attempt. */
-.qc-hole-open {
-  background: var(--void);
-  border: 1px dashed var(--rule-strong);
+.qc-note {
+  font-size: 13px;
+  line-height: 1.55;
   color: var(--ink-70);
 }
 
-/* Requested and not yet run. A hole with a dotted edge. */
-.qc-hole-pending {
-  background: var(--void);
-  border: 1px dotted var(--rule);
-  color: var(--ink-55);
+.qc-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  padding-bottom: 1px;
+  transition: border-color 120ms ease-out;
+}
+
+.qc-link:hover {
+  border-color: var(--accent);
 }
 
 /* --------------------------------------------------------------------------
-   Matrix. A grid whose rows count units, plus the row and column locator.
+   Cards, tables, stats
    -------------------------------------------------------------------------- */
 
-.qc-matrix {
-  border-collapse: collapse;
-  border-spacing: 0;
+.qc-card {
+  background: var(--field);
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
+  padding: 22px 24px;
+  transition: box-shadow 160ms ease-out, transform 160ms ease-out;
 }
 
-.qc-matrix th,
-.qc-matrix td {
-  height: var(--row);
-  padding: 0;
-  text-align: center;
-  vertical-align: middle;
+.qc-card:has(a:hover),
+.qc-card:hover {
+  box-shadow: var(--shadow-card-hover);
 }
 
-.qc-matrix thead th {
-  height: auto;
-  padding-bottom: 10px;
+.qc-card h2 {
+  margin: 18px 0 8px;
 }
 
-/* Locator. A flat wash on the crossing row and column, no motion. */
-.qc-locate {
-  background: color-mix(in srgb, var(--ink) 6%, transparent);
+.qc-rounds {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 18px;
+  margin-top: 16px;
 }
 
-.qc-cell-mark {
+.qc-stats {
+  justify-content: flex-start;
+  gap: 32px;
+  background: var(--field);
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
+  padding: 20px 24px;
+  margin-bottom: 32px;
+}
+
+.qc-stats > div {
+  display: grid;
+  gap: 4px;
+  min-width: 100px;
+}
+
+.qc-stats strong {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.qc-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0 4px;
+}
+
+.qc-count {
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 2px;
+  align-items: baseline;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font: 600 11px/14px var(--font-display);
+  letter-spacing: 0.02em;
+  background: var(--field-sunk);
+  color: var(--ink-70);
 }
 
-.qc-fill-conflict {
-  background: var(--red);
-  color: var(--field);
-}
-
-.qc-fill-cleared {
-  background: var(--blue);
-  color: var(--field);
-}
-
-/* Ochre is fill only. The glyph on it is ink, never the field colour, because
-   the field on ochre measures worse than the ink does. */
-.qc-fill-unclear {
-  background: var(--ochre);
+.qc-count b {
+  font: 700 14px/16px var(--font-record);
   color: var(--ink);
 }
 
-/* --------------------------------------------------------------------------
-   Coverage bar. Filled and hollow unit dots, one per pair, never a percentage.
-   Ninety-three dots cannot lie about how many are hollow.
-   -------------------------------------------------------------------------- */
-
-.qc-dots {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
+.qc-count.qc-cleared {
+  background: color-mix(in srgb, var(--blue) 12%, var(--field));
+  color: var(--blue);
+}
+.qc-count.qc-cleared b {
+  color: var(--blue);
 }
 
-.qc-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  flex: 0 0 auto;
+.qc-count.qc-conflict {
+  background: color-mix(in srgb, var(--red) 12%, var(--field));
+  color: var(--red);
+}
+.qc-count.qc-conflict b {
+  color: var(--red);
 }
 
-.qc-dot-filled {
-  background: var(--ink);
+.qc-count.qc-unclear {
+  background: color-mix(in srgb, var(--ochre) 14%, var(--field));
+  color: var(--ochre);
+}
+.qc-count.qc-unclear b {
+  color: var(--ochre);
 }
 
-.qc-dot-hollow {
-  background: var(--void);
-  border: 1px solid var(--rule-strong);
+.qc-count.qc-hole {
+  background: var(--field-sunk);
+  color: var(--ink-55);
+  border: 1px dashed var(--rule-strong);
 }
 
-/* --------------------------------------------------------------------------
-   Panels and rules. Hairlines, radius never above 2px.
-   -------------------------------------------------------------------------- */
+.qc-table-wrap {
+  overflow-x: auto;
+  background: var(--field);
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
+}
 
-.qc-panel {
-  border: 1px solid var(--rule-strong);
-  border-radius: 2px;
+.qc-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.qc-table th,
+.qc-table td {
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--rule);
+  padding: 14px 18px;
+}
+
+.qc-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.qc-table th {
+  font: 600 11px/14px var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-70);
+  background: var(--field-sunk);
+}
+
+.qc-alert {
+  background: color-mix(in srgb, var(--red) 8%, var(--field));
+  border: 1px solid color-mix(in srgb, var(--red) 30%, transparent);
+  border-radius: 12px;
+  color: var(--red);
+  padding: 14px 16px;
 }
 
 .qc-rule {
   border-top: 1px solid var(--rule);
 }
 
-.qc-rule-strong {
-  border-top: 1px solid var(--rule-strong);
+/* --------------------------------------------------------------------------
+   Verdict chips
+   -------------------------------------------------------------------------- */
+
+.qc-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font: 600 11px/16px var(--font-display);
+  letter-spacing: 0.04em;
 }
 
-/* The three non-verdict endings share one treatment, so a transient problem
-   can never be mistaken for a finding. In this system that treatment is the
-   hole: an open left edge instead of a closed rule. */
-.qc-open-edge {
-  border-left: 3px dashed var(--rule-strong);
+.qc-badge.qc-clear {
+  background: var(--blue);
+  color: #fff;
 }
 
-/* A refusal is the only thing rubricated. Red at 18px+ only. */
-.qc-closed-edge {
-  border-left: 3px solid var(--red);
+.qc-badge.qc-conflict {
+  background: var(--red);
+  color: #fff;
+}
+
+.qc-badge.qc-material_unclear {
+  background: var(--ochre);
+  color: #fff;
+}
+
+.qc-badge.qc-unscreened,
+.qc-badge.qc-insufficient,
+.qc-badge.qc-pending {
+  background: transparent;
+  border: 1px dashed var(--rule-strong);
+  color: var(--ink-55);
+}
+
+.qc-unscreened {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  padding: 4px 10px 4px 12px;
+  font: 500 12px/16px var(--font-body);
 }
 
 /* --------------------------------------------------------------------------
-   Focus, in the system's own ink. Never a browser default outline.
+   Forms and actions
+   -------------------------------------------------------------------------- */
+
+.qc-actions {
+  background: var(--field);
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
+  padding: 20px 22px;
+  margin-top: 24px;
+}
+
+.qc-action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.qc-action {
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--field-sunk);
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.qc-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 18px 0;
+}
+
+@media (max-width: 650px) {
+  .qc-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.qc-field {
+  display: grid;
+  gap: 5px;
+  font: 500 12px/16px var(--font-body);
+  color: var(--ink-70);
+}
+
+.qc-field input,
+.qc-field select {
+  width: 100%;
+  min-width: 0;
+  background: var(--field);
+  border: 1px solid var(--rule-strong);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font: 14px/20px var(--font-body);
+  color: var(--ink);
+  transition: border-color 120ms ease-out, box-shadow 120ms ease-out;
+}
+
+.qc-field input:focus,
+.qc-field select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.qc-action-message {
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 10px;
+  color: var(--ink);
+  padding: 12px 14px;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.qc-button,
+.qc-btn,
+.qc-btn-quiet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--rule-strong);
+  background: var(--field);
+  color: var(--ink);
+  padding: 9px 16px;
+  border-radius: 10px;
+  font: 600 13px/16px var(--font-body);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 140ms ease-out, border-color 140ms ease-out,
+    color 140ms ease-out, transform 100ms ease-out;
+}
+
+.qc-button:hover:not(:disabled),
+.qc-btn:hover:not(:disabled),
+.qc-btn-quiet:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.qc-button:active:not(:disabled),
+.qc-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.qc-button:disabled,
+.qc-btn:disabled,
+.qc-btn-quiet:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.qc-button-primary,
+.qc-btn {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.qc-button-primary:hover:not(:disabled),
+.qc-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 88%, black);
+  border-color: color-mix(in srgb, var(--accent) 88%, black);
+  color: #fff;
+}
+
+/* --------------------------------------------------------------------------
+   Focus, selection, motion
    -------------------------------------------------------------------------- */
 
 :focus-visible {
-  outline: 2px solid var(--ink);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 1px;
+  border-radius: 4px;
 }
 
 .qc-skip {
@@ -322,6 +602,7 @@ body {
   z-index: 60;
   background: var(--field);
   border: 1px solid var(--ink);
+  border-radius: 10px;
   padding: 10px 16px;
   transition: top 120ms ease-out;
 }
@@ -330,121 +611,21 @@ body {
   top: 16px;
 }
 
-/* --------------------------------------------------------------------------
-   Controls. Poster furniture: a rule, a ground, tracked capitals.
-   -------------------------------------------------------------------------- */
-
-.qc-btn,
-.qc-btn-quiet {
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 11px;
-  line-height: 14px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  padding: 11px 16px;
-  border: 1px solid var(--ink);
-  border-radius: 2px;
-  color: var(--ink);
-  background: transparent;
-  cursor: pointer;
-  text-align: left;
-  transition: background-color 120ms ease-out, color 120ms ease-out;
-}
-
-.qc-btn {
-  background: var(--ink);
-  color: var(--field);
-}
-
-.qc-btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--ink) 82%, var(--field));
-}
-
-.qc-btn-quiet {
-  border-color: var(--rule-strong);
-}
-
-.qc-btn-quiet:hover:not(:disabled) {
-  border-color: var(--ink);
-  background: color-mix(in srgb, var(--ink) 5%, transparent);
-}
-
-.qc-btn:disabled,
-.qc-btn-quiet:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
-}
-
-.qc-input,
-.qc-select,
-.qc-textarea {
-  width: 100%;
-  background: color-mix(in srgb, var(--field) 50%, #fff);
-  border: 1px solid var(--rule-strong);
-  border-radius: 2px;
-  padding: 9px 10px;
-  color: var(--ink);
-  font-family: var(--font-record);
-  font-size: 13px;
-  line-height: 20px;
-}
-
-.qc-select {
-  font-family: var(--font-body);
-  font-size: 16px;
-}
-
-.qc-textarea {
-  min-height: 6rem;
-  resize: vertical;
-}
-
-/* --------------------------------------------------------------------------
-   Motion. Source rows in the drawer resolve independently; the active step
-   breathes rather than spins. Every signature element is a structure, so all
-   of this can be removed without losing information.
-   -------------------------------------------------------------------------- */
-
-.qc-active {
-  animation: qc-breathe 2600ms ease-in-out infinite;
-}
-
-@keyframes qc-breathe {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .qc-active {
-    animation: none !important;
-    opacity: 1 !important;
-  }
-
+  .qc-card,
+  .qc-button,
+  .qc-btn,
+  .qc-btn-quiet,
+  .qc-nav a,
   .qc-skip {
     transition: none;
   }
-
-  .qc-btn,
-  .qc-btn-quiet {
-    transition: none;
-  }
-
   * {
     scroll-behavior: auto !important;
   }
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--blue) 20%, transparent);
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
   color: var(--ink);
 }
-
-.qc-nav{display:flex;flex-wrap:wrap;gap:18px;border-bottom:1px solid var(--rule);padding:12px 0;font:500 11px/14px var(--font-display);letter-spacing:.08em;text-transform:uppercase}.qc-nav a{color:var(--ink);text-decoration:none}.qc-nav a:hover{text-decoration:underline}.qc-next{display:flex;justify-content:space-between;gap:24px;align-items:center;border:1px solid var(--rule-strong);padding:18px;margin:28px 0}.qc-actions-inline{display:flex;flex-wrap:wrap;gap:10px}.qc-btn-quiet{display:inline-block;font-family:var(--font-display);font-weight:500;font-size:11px;line-height:14px;letter-spacing:.1em;text-transform:uppercase;padding:11px 16px;border:1px solid var(--rule-strong);border-radius:2px;color:var(--ink);background:transparent;text-decoration:none}.qc-btn-quiet:hover{text-decoration:underline}@media(max-width:650px){.qc-next{display:block}.qc-actions-inline{margin-top:16px}}
-.qc-provenance{border-bottom:1px solid var(--rule);padding:8px 24px;color:var(--ink-70);font:500 10px/14px var(--font-display);letter-spacing:.1em;text-transform:uppercase;text-align:right}
-.qc-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:18px 0}@media(max-width:650px){.qc-form-grid{grid-template-columns:1fr}}
