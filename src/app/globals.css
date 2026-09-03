@@ -143,6 +143,56 @@ body {
   margin-bottom: 6px;
 }
 
+/* --------------------------------------------------------------------------
+   Hero. A two-column mast on desktop: the register's own words on the left,
+   an evidence-grid mark on the right -- filled cells are a finding, holes
+   are the gaps this product is built to name honestly. Purely decorative
+   (aria-hidden), and collapses to a single column under the matrix
+   breakpoint rather than competing with the words for space.
+   -------------------------------------------------------------------------- */
+
+.qc-hero {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 32px;
+  align-items: center;
+}
+
+.qc-hero-main {
+  min-width: 0;
+}
+
+.qc-hero-mark {
+  width: 168px;
+  flex-shrink: 0;
+}
+
+.qc-hero-grid {
+  width: 100%;
+  height: auto;
+}
+
+.qc-hero-cell-fill {
+  fill: var(--accent);
+  opacity: 0.9;
+}
+
+.qc-hero-cell-hole {
+  fill: none;
+  stroke: var(--rule-strong);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+}
+
+@media (max-width: 760px) {
+  .qc-hero {
+    grid-template-columns: 1fr;
+  }
+  .qc-hero-mark {
+    display: none;
+  }
+}
+
 .qc-round-header {
   border-bottom: 1px solid var(--rule);
   margin: 8px 0 28px;

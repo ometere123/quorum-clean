@@ -27,9 +27,25 @@ export default function HomePage() {
   }, []);
 
   return <main className="qc-shell">
-    <header className="qc-header"><div><span className="qc-label">GRANT-ROUND INTEGRITY REGISTER</span><h1 className="qc-display">Quorum Clean</h1></div><span className="qc-record">{sourceLabel}</span></header>
-    <nav className="qc-nav" aria-label="Primary"><Link href="/">Dashboard</Link><Link href="/rounds">Rounds</Link><Link href="/rounds/new">Create round</Link><Link href="/activity">Activity</Link></nav>
-    <section className="qc-intro"><p className="qc-heading">A public-evidence screen for reviewer weight.</p><p>Quorum Clean checks declared reviewer and applicant identities against public authorship, employment and code records. It reports a qualified tie or a qualified absence; it never claims that a clear pair is conflict-free.</p></section>
+    <section className="qc-hero">
+      <div className="qc-hero-main">
+        <header className="qc-header"><div><span className="qc-label">GRANT-ROUND INTEGRITY REGISTER</span><h1 className="qc-display">Quorum Clean</h1></div><span className="qc-record">{sourceLabel}</span></header>
+        <nav className="qc-nav" aria-label="Primary"><Link href="/">Dashboard</Link><Link href="/rounds">Rounds</Link><Link href="/rounds/new">Create round</Link><Link href="/activity">Activity</Link></nav>
+        <section className="qc-intro"><p className="qc-heading">A public-evidence screen for reviewer weight.</p><p>Quorum Clean checks declared reviewer and applicant identities against public authorship, employment and code records. It reports a qualified tie or a qualified absence; it never claims that a clear pair is conflict-free.</p></section>
+      </div>
+      <div className="qc-hero-mark" aria-hidden="true">
+        <svg viewBox="0 0 220 220" className="qc-hero-grid" role="presentation">
+          {Array.from({ length: 6 }).map((_, row) => Array.from({ length: 6 }).map((_, col) => {
+            const filled = (row + col) % 3 !== 2;
+            const cx = 22 + col * 36;
+            const cy = 22 + row * 36;
+            return filled
+              ? <rect key={`${row}-${col}`} x={cx - 10} y={cy - 10} width="20" height="20" rx="5" className="qc-hero-cell-fill" />
+              : <rect key={`${row}-${col}`} x={cx - 10} y={cy - 10} width="20" height="20" rx="5" className="qc-hero-cell-hole" />;
+          }))}
+        </svg>
+      </div>
+    </section>
     {error ? <p className="qc-alert">{error} No fixture has been substituted.</p> : null}
     {totals ? <section className="qc-stats"><Stat label="Rounds" value={totals.rounds_created}/><Stat label="Screenings" value={totals.screenings_requested}/><Stat label="Conflicts" value={String(conflictsAcrossFetchedRounds(summaries))}/><Stat label="Appeals" value={totals.appeals_filed}/></section> : null}
     <section className="qc-next"><div><span className="qc-label">NEXT ACTION</span><p className="qc-heading">{items.length ? "Open a round to continue its evidence workflow." : "Create the first review round."}</p></div><div className="qc-actions-inline"><Link className="qc-btn" href="/rounds/new">Create round</Link><Link className="qc-btn-quiet" href="/rounds">Browse rounds</Link></div></section>
