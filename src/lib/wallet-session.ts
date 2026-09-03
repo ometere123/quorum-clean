@@ -1,167 +1,165 @@
 /**
- * The wallet session, as a reducer.
+ * The wallet session, as a value rather than as a scatter of `useState` calls.
  *
- * Injected wallet only. There is no chooser, because a chooser is a list of things this build has
- * not tested against, and offering one would be a claim about compatibility that nobody made.
+ * Everything a wallet can do to a session while it is open happens here: the person switches
+ * account, removes the account, switches network, or the provider drops the connection. None
+ * of those is exceptional and all of them change whether a write may be signed, so they are
+ * one transition function that a test can drive without a browser.
  *
- * The state machine lives here rather than inside the provider so it can be reasoned about
- * without a browser. Every refusal returns a sentence, because a disabled button with no reason
- * is the single most common way an interface stops being honest about what it needs.
+ * Two rules the reducer keeps:
+ *
+ * 1. An event from a wallet this app is not connected to is ignored. A provider may announce
+ *    accounts at any time, and a page that has not been given consent must not become
+ *    connected because of an announcement.
+ * 2. The chain the wallet reports is carried in the session and the write gate reads it, so
+ *    the masthead cannot print this build's network name while the wallet is somewhere else.
+ *
+ * There is one signer and it is an injected wallet. No key is generated, stored or read
+ * anywhere in this app, and there is no wallet chooser.
  */
 
-import { chain, CHAIN_NAME } from "./genlayer/config.ts";
-
-export type WalletStatus =
-  /** No injected provider in the page at all. */
-  | "unavailable"
-  /** A provider is present and no account has been shared. Never auto-connected. */
-  | "disconnected"
-  /** The provider was asked and has not answered. */
-  | "connecting"
-  /** An account is shared. Whether it is on the right network is a separate question. */
-  | "connected";
+export type WalletMode = "none" | "injected";
 
 export type WalletState = {
-  status: WalletStatus;
-  address: `0x${string}` | null;
-  /** The chain id the wallet reports, as the wallet reports it. `null` when unknown. */
-  chainId: number | null;
-  /** The last refusal, in words fit to show. */
-  refusal: string | null;
+  mode: WalletMode;
+  address?: `0x${string}`;
+  /** The chain the wallet says it is on. Undefined until it has said. */
+  chainId?: number;
+  /** Something the person needs to be told. Cleared by anything that resolves it. */
+  error?: string;
 };
 
-export const INITIAL_WALLET: WalletState = {
-  status: "disconnected",
-  address: null,
-  chainId: null,
-  refusal: null,
-};
+export const DISCONNECTED: WalletState = { mode: "none" };
 
 export type WalletEvent =
-  | { type: "detected"; present: boolean }
-  | { type: "request" }
-  | { type: "accounts"; addresses: readonly string[] }
-  | { type: "chain"; chainId: number | null }
-  | { type: "refused"; reason: string }
-  | { type: "disconnect" };
+  | { type: "connected"; address: string; chainId?: unknown }
+  | { type: "accounts-changed"; accounts: unknown }
+  | { type: "chain-changed"; chainId: unknown }
+  | { type: "provider-disconnected"; message?: string }
+  | { type: "connection-refused"; message: string }
+  | { type: "forget" };
 
-const asAddress = (value: string): `0x${string}` | null =>
-  /^0x[0-9a-fA-F]{40}$/.test(value) ? (value as `0x${string}`) : null;
-
-export const nextWalletState = (current: WalletState, event: WalletEvent): WalletState => {
+export function nextWalletState(current: WalletState, event: WalletEvent): WalletState {
   switch (event.type) {
-    case "detected":
-      if (event.present) {
-        return current.status === "unavailable"
-          ? { ...current, status: "disconnected", refusal: null }
-          : current;
-      }
-      return { ...INITIAL_WALLET, status: "unavailable" };
-    case "request":
-      return { ...current, status: "connecting", refusal: null };
-    case "accounts": {
-      const first = event.addresses.length > 0 ? asAddress(event.addresses[0]) : null;
-      if (!first) {
-        return { ...current, status: "disconnected", address: null, refusal: null };
-      }
-      return { ...current, status: "connected", address: first, refusal: null };
-    }
-    case "chain":
-      return { ...current, chainId: event.chainId };
-    case "refused":
-      return {
-        ...current,
-        status: current.address ? "connected" : "disconnected",
-        refusal: event.reason,
-      };
-    case "disconnect":
-      return { ...INITIAL_WALLET, status: current.status === "unavailable" ? "unavailable" : "disconnected" };
-  }
-};
-
-/** Hex chain id to a number, without turning a malformed value into zero. */
-export const parseChainId = (value: unknown): number | null => {
-  if (typeof value === "number" && Number.isInteger(value)) return value;
-  if (typeof value !== "string") return null;
-  const parsed = value.startsWith("0x") ? Number.parseInt(value, 16) : Number.parseInt(value, 10);
-  return Number.isInteger(parsed) ? parsed : null;
-};
-
-export const chainIdHex = (id: number): string => `0x${id.toString(16)}`;
-
-export const EXPECTED_CHAIN_ID: number | null =
-  typeof chain.id === "number" ? chain.id : parseChainId(chain.id as unknown);
-
-export const networkLabel = (id: number | null): string => {
-  if (id === null) return "network not reported";
-  if (EXPECTED_CHAIN_ID !== null && id === EXPECTED_CHAIN_ID) return CHAIN_NAME;
-  return `chain ${id}`;
-};
-
-/**
- * Whether the connected wallet is on the network this build talks to.
- *
- * `unknown` fails closed. A wallet that will not say which chain it is on is not the same as a
- * wallet on the right one, and treating it as though it were would send a write into the dark.
- */
-export type NetworkVerdict = "correct" | "wrong" | "unknown";
-
-export const networkVerdict = (state: WalletState): NetworkVerdict => {
-  if (state.chainId === null || EXPECTED_CHAIN_ID === null) return "unknown";
-  return state.chainId === EXPECTED_CHAIN_ID ? "correct" : "wrong";
-};
-
-/**
- * Can this session sign a write, and if not, exactly why.
- *
- * `reason` is written to be shown next to the button, so it names the thing to do rather than
- * the state that is wrong.
- */
-export type WriteGate = { ok: boolean; reason: string | null };
-
-export const writeGate = (state: WalletState): WriteGate => {
-  switch (state.status) {
-    case "unavailable":
-      return {
-        ok: false,
-        reason:
-          "No injected wallet is available in this browser. This build talks to an injected wallet and nothing else.",
-      };
-    case "connecting":
-      return { ok: false, reason: "Waiting for your wallet to answer." };
-    case "disconnected":
-      return { ok: false, reason: "Connect a wallet to sign this." };
     case "connected":
-      break;
-  }
-  const verdict = networkVerdict(state);
-  if (verdict === "wrong") {
-    return {
-      ok: false,
-      reason: `Your wallet is on ${networkLabel(state.chainId)} and this contract is on ${CHAIN_NAME}.`,
-    };
-  }
-  if (verdict === "unknown") {
-    return {
-      ok: false,
-      reason: `Your wallet has not reported which network it is on, so this build will not sign. It expects ${CHAIN_NAME}.`,
-    };
-  }
-  return { ok: true, reason: null };
-};
+      return {
+        mode: "injected",
+        address: event.address as `0x${string}`,
+        chainId: parseChainId(event.chainId),
+      };
 
-/** A provider error, in words. Codes are kept, because a code is the only part a wallet agrees on. */
-export const refusalMessage = (error: unknown): string => {
-  if (typeof error === "object" && error !== null) {
-    const code = (error as { code?: unknown }).code;
-    if (code === 4001) return "You declined the request in your wallet. Nothing was sent.";
-    if (code === -32002) {
-      return "Your wallet already has a pending request for this site. Open it and answer that one.";
+    case "accounts-changed": {
+      if (current.mode !== "injected") return current;
+      const next = Array.isArray(event.accounts) ? event.accounts[0] : undefined;
+      if (typeof next !== "string" || !next) {
+        return {
+          mode: "none",
+          error:
+            "The wallet no longer offers an account to this site, so nothing can be signed. Connect again when you want to.",
+        };
+      }
+      return { ...current, address: next as `0x${string}`, error: undefined };
     }
-    if (code === 4902) {
-      return `Your wallet does not have ${CHAIN_NAME} configured, so it could not switch to it.`;
+
+    case "chain-changed": {
+      if (current.mode !== "injected") return current;
+      // The gate decides what a different chain means. Recording it is not judging it.
+      return { ...current, chainId: parseChainId(event.chainId), error: undefined };
     }
+
+    case "provider-disconnected":
+      if (current.mode !== "injected") return current;
+      return {
+        mode: "none",
+        error: event.message?.trim()
+          ? `The wallet disconnected: ${event.message.trim()}`
+          : "The wallet disconnected. Connect again to sign anything.",
+      };
+
+    case "connection-refused":
+      return { mode: "none", error: refusalMessage(event.message) };
+
+    case "forget":
+      return DISCONNECTED;
   }
-  if (error instanceof Error && error.message.trim().length > 0) return error.message;
-  return "The wallet returned no reason.";
-};
+}
+
+/** A chain id, which arrives as `"0xf22f"` from events and as a number from some providers. */
+export function parseChainId(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isInteger(value) && value > 0) return value;
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const parsed = trimmed.startsWith("0x") ? Number.parseInt(trimmed, 16) : Number(trimmed);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+export const chainIdHex = (id: number) => `0x${id.toString(16)}`;
+
+/** A declined request is not a fault, so it is not printed as one. */
+function refusalMessage(message: string): string {
+  const lower = message.toLowerCase();
+  if (lower.includes("4001") || lower.includes("user rejected") || lower.includes("user denied")) {
+    return "The wallet declined the connection request. Nothing was signed.";
+  }
+  return message.trim() || "The wallet request was refused.";
+}
+
+/* ------------------------------------------------------------------------- *
+ * Which network the wallet is on
+ * ------------------------------------------------------------------------- */
+
+export type NetworkVerdict =
+  | { kind: "unknown" }
+  | { kind: "expected" }
+  | { kind: "wrong"; chainId: number };
+
+export function networkVerdict(state: WalletState, expectedChainId: number): NetworkVerdict {
+  if (state.mode !== "injected") return { kind: "unknown" };
+  if (state.chainId === undefined) return { kind: "unknown" };
+  return state.chainId === expectedChainId
+    ? { kind: "expected" }
+    : { kind: "wrong", chainId: state.chainId };
+}
+
+/**
+ * What the masthead prints beside the address.
+ *
+ * `expectedName` is only ever returned for a verdict of `expected`. A wallet on some other
+ * chain gets that chain's number and nothing reassuring, because the failure this guards
+ * against is a page that says StudioNet while the wallet is on Ethereum mainnet.
+ */
+export function networkLabel(verdict: NetworkVerdict, expectedName: string): string {
+  if (verdict.kind === "expected") return expectedName;
+  if (verdict.kind === "wrong") return `wrong network: chain ${verdict.chainId}`;
+  return "network unconfirmed";
+}
+
+/**
+ * Whether a write may be signed. Unknown fails closed.
+ *
+ * A wallet that has not said which chain it is on might be anywhere, and a transaction sent
+ * to the wrong chain is either lost or, worse, a real transaction somewhere the person did
+ * not intend.
+ */
+export function writeGate(
+  state: WalletState,
+  expectedChainId: number,
+  expectedName: string,
+): { canWrite: boolean; message?: string } {
+  if (state.mode !== "injected" || !state.address) {
+    return { canWrite: false, message: "Connect a wallet before sending a transaction." };
+  }
+  const verdict = networkVerdict(state, expectedChainId);
+  if (verdict.kind === "expected") return { canWrite: true };
+  if (verdict.kind === "wrong") {
+    return {
+      canWrite: false,
+      message: `The wallet is on chain ${verdict.chainId}, and this build writes to ${expectedName} (chain ${expectedChainId}). Switch the wallet's network to sign anything here.`,
+    };
+  }
+  return {
+    canWrite: false,
+    message: `The wallet has not confirmed which network it is on, so this write is held back rather than sent to the wrong chain. Expected ${expectedName} (chain ${expectedChainId}).`,
+  };
+}

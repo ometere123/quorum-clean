@@ -18,6 +18,8 @@ test.describe("Quorum Clean served production build", () => {
   test("a missing injected wallet is a visible refusal, not a fixture fallback", async ({ page }) => {
     await page.goto("/manage");
     await page.getByRole("button", { name: "Connect wallet" }).click();
-    await expect(page.getByText("No injected wallet was found.")).toBeVisible();
+    // Shown twice: once beside the header button that was clicked, once as the standing
+    // gate note on the write panel below. Both say the same true thing, so either is fine.
+    await expect(page.getByText("No injected wallet was found in this browser.").first()).toBeVisible();
   });
 });
