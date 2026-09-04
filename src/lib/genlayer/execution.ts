@@ -20,8 +20,12 @@ export function inspectGenVMExecution(tx: TransactionLike | null | undefined): {
 export function assertSuccessfulGenVMExecution(tx: TransactionLike | null | undefined, hash: string) {
   const outcome = inspectGenVMExecution(tx);
   if (outcome.executionResult !== "SUCCESS") {
+    // The leader receipt's own error, when the node reported one, is the actual reason a
+    // rollback or an error happened. Dropping it and keeping only the outcome word and the hash
+    // told the truth about *that* a write failed and nothing about *why*.
+    const detail = outcome.executionError?.trim();
     throw new Error(
-      `GenLayer contract execution failed (${outcome.executionResult}). Transaction: ${hash}`,
+      `GenLayer contract execution failed (${outcome.executionResult})${detail ? `: ${detail}` : ""}. Transaction: ${hash}`,
     );
   }
   return outcome;

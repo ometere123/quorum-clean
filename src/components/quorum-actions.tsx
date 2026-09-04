@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CONTRACT_ADDRESS } from "@/lib/genlayer/config";
 import { waitAccepted, writeContract } from "@/lib/genlayer/tx";
+import { normalizeError } from "@/lib/wallet-errors";
 import { useWallet } from "./wallet-provider";
 
 type FieldMap = Record<string, string>;
@@ -24,7 +25,7 @@ export function QuorumActions({ roundId = "" }: { roundId?: string }) {
       setMessage(`Submitted ${functionName}: ${String(hash)}. Waiting for finalized GenVM execution…`);
       const outcome = await waitAccepted(client, hash);
       setMessage(`${functionName} finalized with GenVM ${outcome.executionResult}. Transaction: ${String(hash)}`);
-    } catch (error) { setMessage(error instanceof Error ? error.message : String(error)); }
+    } catch (error) { setMessage(normalizeError(error)); }
     finally { setBusy(false); }
   }
 

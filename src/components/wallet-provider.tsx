@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { createInjectedClient } from "@/lib/genlayer/client";
 import { chain, CHAIN_NAME } from "@/lib/genlayer/config";
+import { normalizeError } from "@/lib/wallet-errors";
 import {
   chainIdHex,
   DISCONNECTED,
@@ -118,7 +119,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       // The wallet answers with `chainChanged`, which the listener above records. Asking
       // again here would only duplicate what the event already says.
     } catch (caught) {
-      const message = caught instanceof Error ? caught.message : String(caught);
+      const message = normalizeError(caught);
       setWallet((current) => ({
         ...current,
         error: `This wallet would not switch to ${CHAIN_NAME} (chain ${chain.id}): ${message} Add the network in the wallet itself, then connect again.`,
@@ -155,7 +156,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         await switchNetwork();
       }
     } catch (caught) {
-      const message = caught instanceof Error ? caught.message : String(caught);
+      const message = normalizeError(caught);
       setWallet((current) => nextWalletState(current, { type: "connection-refused", message }));
     } finally {
       setConnecting(false);

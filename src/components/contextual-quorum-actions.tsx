@@ -6,6 +6,7 @@ import { useState } from "react";
 import { CONTRACT_ADDRESS } from "@/lib/genlayer/config";
 import { waitAccepted, writeContract } from "@/lib/genlayer/tx";
 import { genToWei, formatGen } from "@/lib/format";
+import { normalizeError } from "@/lib/wallet-errors";
 import { useWallet } from "./wallet-provider";
 
 type Props = { roundId?: string; screeningId?: string; bondWei?: string; status?: string };
@@ -60,7 +61,7 @@ function SubmitButton({ functionName, args, value = "0", disabled = false }: { f
   const router = useRouter();
   const wallet = useWallet();
   const [busy, setBusy] = useState(false); const [message, setMessage] = useState("");
-  async function run() { setBusy(true); setMessage("Awaiting wallet approval…"); try { if (!CONTRACT_ADDRESS) throw new Error("The canonical contract is not configured."); const client = await wallet.getWriteClient(); const hash = await writeContract(client, functionName, args, BigInt(value)); setMessage(`Submitted ${String(hash)}. Waiting for FINALIZED GenVM execution…`); const outcome = await waitAccepted(client, hash); if (outcome.returned.kind === "returned" && outcome.returned.text.trim().startsWith("[REJECTED]")) setMessage(`REFUSED: ${outcome.returned.text} · ${String(hash)}`); else if (outcome.executionResult !== "SUCCESS") setMessage(`GenVM ERROR after finality: ${String(hash)}`); else { setMessage(`SUCCESS: ${functionName} finalized with GenVM SUCCESS · ${String(hash)}`); router.refresh(); } } catch (error) { setMessage(error instanceof Error ? error.message : String(error)); } finally { setBusy(false); } }
+  async function run() { setBusy(true); setMessage("Awaiting wallet approval…"); try { if (!CONTRACT_ADDRESS) throw new Error("The canonical contract is not configured."); const client = await wallet.getWriteClient(); const hash = await writeContract(client, functionName, args, BigInt(value)); setMessage(`Submitted ${String(hash)}. Waiting for FINALIZED GenVM execution…`); const outcome = await waitAccepted(client, hash); if (outcome.returned.kind === "returned" && outcome.returned.text.trim().startsWith("[REJECTED]")) setMessage(`REFUSED: ${outcome.returned.text} · ${String(hash)}`); else if (outcome.executionResult !== "SUCCESS") setMessage(`GenVM ERROR after finality: ${String(hash)}`); else { setMessage(`SUCCESS: ${functionName} finalized with GenVM SUCCESS · ${String(hash)}`); router.refresh(); } } catch (error) { setMessage(normalizeError(error)); } finally { setBusy(false); } }
   const walletNote = wallet.mode !== "injected" ? (wallet.hasInjected ? "Connect the wallet in the header to sign this." : "No injected wallet was found in this browser.") : (wallet.writeBlockedReason ?? null);
   return <div><div className="flex flex-wrap items-center gap-3"><button className="qc-button qc-button-primary" type="button" onClick={() => void run()} disabled={busy || disabled || !wallet.canWrite}>{busy ? "Waiting…" : functionName.replaceAll("_", " ")}</button></div>{walletNote ? <p className="qc-note mt-2">{walletNote}</p> : null}{message ? <p className="qc-action-message mt-2" role="status">{message}</p> : null}</div>;
 }

@@ -4,6 +4,7 @@ import { CONTRACT_ADDRESS, REQUIRED_METHODS } from "./config";
 import { createReadClient } from "./read-client";
 import { assertSuccessfulGenVMExecution, inspectGenVMExecution } from "./execution";
 import { returnedFromTransaction, type ReturnedValue } from "./returned-value";
+import { normalizeError } from "../wallet-errors.ts";
 
 export type Client = GenLayerClient<typeof import("./config").chain>;
 
@@ -52,7 +53,7 @@ export async function readMaybe<T>(read: () => Promise<unknown>): Promise<T | un
   try {
     return (await read()) as T;
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = normalizeError(error);
     if (
       message.includes("execution failed") ||
       message.includes("Missing or invalid parameters") ||
